@@ -1,0 +1,83 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 99a8cfd54dfff437eaf2a79a6946170e20d404c153fc583b3aca544e69d908e4
+
+name:           habulara
+version:        0.0.0.0
+description:    Please see the README on GitHub at <https://github.com/telostat/habulara-incubation#readme>
+homepage:       https://github.com/telostat/habulara-incubation#readme
+bug-reports:    https://github.com/telostat/habulara-incubation/issues
+author:         Vehbi Sinan Tunalioglu
+maintainer:     vst@vsthost.com
+copyright:      Copyright (c) 2020 Vehbi Sinan Tunalioglu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/telostat/habulara-incubation
+
+library
+  exposed-modules:
+      Data.Habulara
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , scientific
+    , text
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
+
+executable habulara-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , habulara
+    , scientific
+    , text
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
+
+test-suite habulara-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , habulara
+    , scientific
+    , text
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
