@@ -24,13 +24,18 @@ dependencies:
 - bytestring
 - cassava
 - containers
+- mtl
+- profunctors
 - scientific
 - text
+- time
 - unordered-containers
 - vector
 
 library:
   source-dirs: src
+  ghc-options:
+  - -Wall
 
 executables:
   habulara-exe:
