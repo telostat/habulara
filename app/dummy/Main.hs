@@ -26,8 +26,8 @@ mapper :: [FieldMapper]
 mapper =
   [ select   "id"
   , select   "name"
-  , selectAs "temperature (C)" "temperature"
-  , selectAs "temperature (F)" "temperature" ~> vDecimal >=> toFahrenheit
+  , selectAs "temperature" "temperature (C)"
+  , selectAs "temperature" "temperature (F)" ~> vDecimal >=> toFahrenheit
   , select   "precipitation" ~> vDecimal >=> percentage
   ]
 
