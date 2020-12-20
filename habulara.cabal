@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e30d7e33f9bc8a82525d38cd8584b6c796a5b99a9f48429b99659a5a30966c19
+-- hash: fe393633d800587c47b367859d3db60288eb8cad96edd58a5664bdd3f1576ced
 
 name:           habulara
 version:        0.0.0.0
@@ -33,14 +33,8 @@ library
       Data.Habulara.Internal.Commons.Text
       Data.Habulara.Internal.Commons.Time
       Data.Habulara.Internal.Mapping
-      Data.Habulara.Internal.MappingPrimitives
-      Data.Habulara.Internal.Operators.Boolean
-      Data.Habulara.Internal.Operators.Date
-      Data.Habulara.Internal.Operators.Decimal
-      Data.Habulara.Internal.Operators.Textual
+      Data.Habulara.Internal.Operators
       Data.Habulara.Internal.Reading
-      Data.Habulara.Internal.ValueMapping
-      Data.Habulara.Internal.ValuePrimitives
       Data.Habulara.Internal.Writing
       Data.Habulara.Types
   other-modules:
