@@ -4,13 +4,14 @@
 
 module Data.Habulara.Internal.Commons.Convert where
 
-import           Control.Monad.Except  (MonadError(throwError))
-import qualified Data.ByteString       as B
-import qualified Data.ByteString.Char8 as BC
-import           Data.Habulara.Types   (HabularaErrorM)
-import           Data.Scientific       (Scientific, toBoundedInteger)
-import qualified Data.Text             as T
-import           Data.Time             (Day(ModifiedJulianDay, toModifiedJulianDay))
+import           Control.Monad.Except                (MonadError(throwError))
+import qualified Data.ByteString                     as B
+import qualified Data.ByteString.Char8               as BC
+import           Data.Habulara.Internal.Commons.Time (parseDateM)
+import           Data.Habulara.Types                 (HabularaErrorM)
+import           Data.Scientific                     (Scientific, toBoundedInteger)
+import qualified Data.Text                           as T
+import           Data.Time                           (Day(ModifiedJulianDay, toModifiedJulianDay))
 
 
 type Converter m a b = (HabularaErrorM m, Show a) => a -> m b
@@ -56,3 +57,7 @@ bsFromDecimal = pure . BC.pack . show
 
 bsFromDay :: Converter m Day B.ByteString
 bsFromDay = pure . BC.pack . show
+
+
+parseDateFromString :: String -> Converter m String Day
+parseDateFromString fmt = mkConverterFromMaybe (parseDateM fmt)

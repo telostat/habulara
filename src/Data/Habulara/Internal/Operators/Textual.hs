@@ -7,8 +7,9 @@ module Data.Habulara.Internal.Operators.Textual where
 import           Control.Monad.Except                   (MonadError(throwError))
 import qualified Data.Habulara.Internal.Commons.Text    as CT
 import           Data.Habulara.Internal.ValueMapping    (vRaw, vText)
-import           Data.Habulara.Internal.ValuePrimitives (sanitizedText, trimmedText)
-import           Data.Habulara.Types                    (Value(..), ValueOperator)
+import           Data.Habulara.Internal.ValuePrimitives (sanitizedText, text, trimmedText)
+import           Data.Habulara.Types                    (HabularaErrorM, Value(..), ValueOperator)
+import qualified Data.Set                               as S
 import qualified Data.Text                              as T
 
 
@@ -146,3 +147,83 @@ prepend p (VText x)  = pure $ VText (p <> x)
 prepend p x@(VRaw _) = vText x >>= prepend p >>= vRaw
 prepend _ _          = throwError "Operator can only be applied to values of textual types."
 
+
+-- >>> splitHead '/' $ text "" :: Either String Value
+-- Right VEmpty
+-- >>> splitHead '/' $ text "a" :: Either String Value
+-- Right (VText "a")
+-- >>> splitHead '/' $ text "a/" :: Either String Value
+-- Right (VText "a")
+-- >>> splitHead '/' $ text "/b" :: Either String Value
+-- Right VEmpty
+-- >>> splitHead '/' $ text "a/b" :: Either String Value
+-- Right (VText "a")
+-- >>> splitHead '/' $ text "a/b/" :: Either String Value
+-- Right (VText "a")
+-- >>> splitHead '/' $ text "a/b/c" :: Either String Value
+-- Right (VText "a")
+splitHead :: Char -> ValueOperator
+splitHead _ VEmpty     = pure VEmpty
+splitHead s (VText x)  = pure $ text $ T.takeWhile (/= s) x
+splitHead s x@(VRaw _) = vText x >>= splitHead s >>= vRaw
+splitHead _ _          = throwError "Operator can only be applied to values of textual types."
+
+
+-- >>> splitTail '/' $ text "" :: Either String Value
+-- Right VEmpty
+-- >>> splitTail '/' $ text "a" :: Either String Value
+-- Right VEmpty
+-- >>> splitTail '/' $ text "a/" :: Either String Value
+-- Right VEmpty
+-- >>> splitTail '/' $ text "/b" :: Either String Value
+-- Right (VText "b")
+-- >>> splitTail '/' $ text "a/b" :: Either String Value
+-- Right (VText "b")
+-- >>> splitTail '/' $ text "a/b/" :: Either String Value
+-- Right (VText "b/")
+-- >>> splitTail '/' $ text "a/b/c" :: Either String Value
+-- Right (VText "b/c")
+splitTail :: Char -> ValueOperator
+splitTail _ VEmpty     = pure VEmpty
+splitTail s (VText x)  = pure $ text $ T.drop 1 $ T.dropWhile (/= s) x
+splitTail s x@(VRaw _) = vText x >>= splitTail s >>= vRaw
+splitTail _ _          = throwError "Operator can only be applied to values of textual types."
+
+
+-- >>> oneOfText (S.fromList ["A", "B", "C"]) $ text "" :: Either String Value
+-- Right VEmpty
+-- >>> oneOfText (S.fromList ["A", "B", "C"]) $ text "A" :: Either String Value
+-- Right (VText "A")
+-- >>> oneOfText (S.fromList ["A", "B", "C"]) $ text "a" :: Either String Value
+-- Left "Unrecognized value for set: a"
+-- >>> oneOfText (S.fromList ["A", "B", "C"]) $ text "x" :: Either String Value
+-- Left "Unrecognized value for set: x"
+oneOfText :: S.Set T.Text -> ValueOperator
+oneOfText _ VEmpty      = pure VEmpty
+oneOfText s x@(VText v) = x <$ checkTextSet s v
+oneOfText s x@(VRaw _)  = vText x >>= oneOfText s >>= vRaw
+oneOfText _ _           = throwError "Operator can only be applied to values of textual types."
+
+
+checkTextSet :: HabularaErrorM m => S.Set T.Text -> T.Text -> m ()
+checkTextSet s x
+  | S.member x s = pure ()
+  | otherwise    = throwError $ "Unrecognized value for set: " <> T.unpack x
+
+
+constant :: T.Text -> ValueOperator
+constant _ VEmpty      = pure VEmpty
+constant s x@(VText v) = x <$ checkConstant s v
+constant s x@(VRaw _)  = vText x >>= constant s >>= vRaw
+constant _ _           = throwError "Operator can only be applied to values of textual types."
+
+
+checkConstant :: HabularaErrorM m => T.Text -> T.Text -> m ()
+checkConstant e x
+  | e == x = pure ()
+  | otherwise = throwError $ "Unexpected value: " <> T.unpack x
+
+
+constantEmpty :: ValueOperator
+constantEmpty VEmpty = pure VEmpty
+constantEmpty x      = throwError $ "Encountered value while expecting nothing: " <> show x

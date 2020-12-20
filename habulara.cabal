@@ -31,8 +31,11 @@ library
       Data.Habulara.Internal.Commons.Convert
       Data.Habulara.Internal.Commons.Read
       Data.Habulara.Internal.Commons.Text
+      Data.Habulara.Internal.Commons.Time
       Data.Habulara.Internal.Mapping
       Data.Habulara.Internal.MappingPrimitives
+      Data.Habulara.Internal.Operators.Boolean
+      Data.Habulara.Internal.Operators.Date
       Data.Habulara.Internal.Operators.Decimal
       Data.Habulara.Internal.Operators.Textual
       Data.Habulara.Internal.Reading
