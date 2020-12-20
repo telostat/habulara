@@ -105,3 +105,20 @@ withBS = dimap TE.encodeUtf8 TE.decodeUtf8
 -- "a b"
 withWords :: ([T.Text] -> [T.Text]) -> T.Text -> T.Text
 withWords = dimap T.words T.unwords
+
+
+
+-- >>> capitalize ""
+-- ""
+-- >>> capitalize "a"
+-- "A"
+-- >>> capitalize "aa"
+-- "Aa"
+-- >>> capitalize "aa aa"
+-- "Aa aa"
+-- >>> withWords (fmap capitalize) "aa aa"
+-- "Aa Aa"
+-- >>> withWords (fmap capitalize) "aa aa" == T.toTitle "aa aa"
+-- True
+capitalize :: T.Text -> T.Text
+capitalize x = T.toUpper (T.take 1 x) <> T.drop 1 x

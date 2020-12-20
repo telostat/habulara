@@ -1,14 +1,16 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 module Main where
 
-import qualified Data.ByteString.Lazy                       as BL
-import           Data.Csv                                   (Name)
+import           Control.Monad        ((>=>))
+import qualified Data.ByteString.Lazy as BL
+import           Data.Csv             (Name)
 import           Data.Habulara
-import           Data.Habulara.Internal.Combinators.Commons
-import qualified Data.Vector                                as V
-import           System.Environment                         (getArgs)
-import           System.IO                                  (hPutStrLn, stderr, stdout)
+import qualified Data.Vector          as V
+import           System.Environment   (getArgs)
+import           System.IO            (hPutStrLn, stderr, stdout)
 
 
 main :: IO ()
@@ -20,15 +22,13 @@ main = do
     Right rs -> writeRecords stdout (V.fromList fields) rs
 
 
-mapper :: [Operator]
+mapper :: [FieldMapper]
 mapper =
-  [ select "id"          >> asNEText
-  , select "name"        >> asText
-  , select "temperature" >> asDecimal
-  , select "temperature" >> rename "temperature (F) - 1" >> asDecimal >> toFahrenheit
-  , use    "temperature" >> rename "temperature (F) - 2" >> toFahrenheit
-  , useAs  "temperature" "temperature (F) - 3" >> toFahrenheit
-  , select "precipitation" >> asDecimal >> asPercentage
+  [ select   "id"
+  , select   "name"
+  , selectAs "temperature (C)" "temperature"
+  , selectAs "temperature (F)" "temperature" ~> vDecimal >=> toFahrenheit
+  , select   "precipitation" ~> vDecimal >=> percentage
   ]
 
 
@@ -36,13 +36,11 @@ fields :: [Name]
 fields =
   [ "id"
   , "name"
-  , "temperature"
-  , "temperature (F) - 1"
-  , "temperature (F) - 2"
-  , "temperature (F) - 3"
+  , "temperature (C)"
+  , "temperature (F)"
   , "precipitation"
   ]
 
 
-toFahrenheit :: Operator
-toFahrenheit = multiply 9 >> divideBy 5 >> add 32
+toFahrenheit :: ValueOperator
+toFahrenheit x = multiply 9 x >>= divideBy 5 >>= add 32

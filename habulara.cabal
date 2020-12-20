@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 15d5032cddb1d376eee34d314148f3eb253c48fd59d8ce5c96830886aa55b8ac
+-- hash: cb6253c3c53691edb345bb8fd10d5b40c6fe105b275f238293a2e8813923c13a
 
 name:           habulara
 version:        0.0.0.0
@@ -28,14 +28,16 @@ source-repository head
 library
   exposed-modules:
       Data.Habulara
-      Data.Habulara.Internal.Combinators
-      Data.Habulara.Internal.Combinators.Commons
-      Data.Habulara.Internal.Combinators.Numeric
-      Data.Habulara.Internal.Combinators.Primitives
-      Data.Habulara.Internal.Combinators.Textual
+      Data.Habulara.Internal.Commons.Convert
+      Data.Habulara.Internal.Commons.Read
       Data.Habulara.Internal.Commons.Text
       Data.Habulara.Internal.Mapping
+      Data.Habulara.Internal.MappingPrimitives
+      Data.Habulara.Internal.Operators.Decimal
+      Data.Habulara.Internal.Operators.Textual
       Data.Habulara.Internal.Reading
+      Data.Habulara.Internal.ValueMapping
+      Data.Habulara.Internal.ValuePrimitives
       Data.Habulara.Internal.Writing
       Data.Habulara.Types
   other-modules:
@@ -63,7 +65,7 @@ executable habulara-exe
       Paths_habulara
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       base >=4.7 && <5
     , bytestring

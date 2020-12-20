@@ -1,11 +1,19 @@
 module Data.Habulara
   ( module Types
-  , module Combinators
+  , module ValueMapping
+  , module ValuePrimitives
+  , module MappingPrimitives
+  , module DecimalOperators
+  , module TextualOperators
   , readRecords
   , writeRecords
   ) where
 
-import Data.Habulara.Internal.Combinators as Combinators
-import Data.Habulara.Internal.Reading     (readRecords)
-import Data.Habulara.Internal.Writing     (writeRecords)
-import Data.Habulara.Types                as Types
+import Data.Habulara.Internal.MappingPrimitives as MappingPrimitives
+import Data.Habulara.Internal.Operators.Decimal as DecimalOperators
+import Data.Habulara.Internal.Operators.Textual as TextualOperators
+import Data.Habulara.Internal.Reading           (readRecords)
+import Data.Habulara.Internal.ValueMapping      as ValueMapping
+import Data.Habulara.Internal.ValuePrimitives   as ValuePrimitives
+import Data.Habulara.Internal.Writing           (writeRecords)
+import Data.Habulara.Types                      as Types

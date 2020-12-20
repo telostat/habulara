@@ -1,8 +1,11 @@
+{-# LANGUAGE ConstraintKinds   #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 module Data.Habulara.Types where
 
-import           Control.Monad.Except   (ExceptT, runExceptT)
+import           Control.Monad.Except   (ExceptT, MonadError, runExceptT)
 import           Control.Monad.Identity (Identity)
 import           Control.Monad.Reader   (ReaderT(runReaderT))
 import           Control.Monad.State    (StateT(runStateT))
@@ -14,6 +17,7 @@ import           Data.Scientific        (Scientific)
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as TE
 import           Data.Time              (Day)
+
 
 -- $core
 --
@@ -80,7 +84,7 @@ instance Csv.FromField Value where
 -- Habulara maps a raw CSV record into a Habulara CSV record using a list of
 -- 'FieldMapper's. A single field is mapped via 'FieldMapper' under the 'REST'
 -- monad stack whereby the environment containts the raw CSV record, the state
--- is the field name ('Field') and the error type is a 'String'.
+-- is the field name ('Field') and the error type is a 'HabularaError'.
 
 
 -- | Field mappers.
@@ -88,7 +92,21 @@ type FieldMappers = [FieldMapper]
 
 
 -- | Field mapper monad.
-type FieldMapper = REST StaticContext String DynamicContext Identity Value
+type FieldMapper = REST StaticContext HabularaError DynamicContext Identity Value
+
+
+-- | Value operator type.
+type ValueOperator =  forall m . (Monad m) => HabularaErrorM m => Value -> m Value
+
+
+-- | Habulara error monad type.
+type HabularaErrorM m = MonadError HabularaError m
+
+
+-- | Habulara error type.
+--
+-- This is an interim definition. We may wish to use a sum type for it.
+type HabularaError = String
 
 
 -- | Field mapper static context (used as the environment in the field mapper monad).
@@ -113,7 +131,7 @@ data DynamicContext = MkDynamicContext
 -- In particular, it is a stack of 'ReaderT', 'ExceptT' and 'StateT' monads.
 --
 -- The concrete monad is 'FieldMapper' which is a type alias to @'REST'
--- 'StaticContext' 'String' 'DynamicContext' 'Identity' 'Value'@.
+-- 'StaticContext' 'HabularaError' 'DynamicContext' 'Identity' 'Value'@.
 
 
 -- | Our underlying monad stack, a stack of 'ReaderT', 'ExceptT' and 'StateT'.
