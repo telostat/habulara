@@ -31,7 +31,7 @@ select f = asks (HM.lookup f . staticContextRecord) >>= \case
 
 
 selectAs :: Field -> Field -> FieldMapper
-selectAs a f = asks (HM.lookup f . staticContextRecord) >>= \case
+selectAs f a = asks (HM.lookup f . staticContextRecord) >>= \case
   Nothing -> EM.throwError $ "No such field found in the raw record: " <> T.unpack f
   Just fv -> setFieldValue a fv
 
