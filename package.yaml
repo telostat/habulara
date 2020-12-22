@@ -1,16 +1,18 @@
 name:                habulara
 version:             0.0.0.0
-github:              "telostat/habulara-incubation"
+github:              "telostat/habulara"
 license:             BSD3
 author:              "Vehbi Sinan Tunalioglu"
 maintainer:          "vst@vsthost.com"
-copyright:           "Copyright (c) 2020 Vehbi Sinan Tunalioglu"
+copyright:           "Copyright (c) 2020 Telostat Pte Ltd"
 
 extra-source-files:
 - README.md
 - ChangeLog.md
 
-description:         Please see the README on GitHub at <https://github.com/telostat/habulara-incubation#readme>
+synopsis:            Toolkit for Processing Tabular Data
+category:            Text, CSV
+description:         Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -34,7 +36,7 @@ library:
   - -Wall
 
 executables:
-  habulara-exe:
+  habulara:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

@@ -4,16 +4,18 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0f9f64e990751894908eba5c8b0167a9e2231607734677b566b505db3c297053
+-- hash: 6f8a0ce201fed4bccac9e231ea4b839296b73d1e1f34dc8aae2185ea4b204f3c
 
 name:           habulara
 version:        0.0.0.0
-description:    Please see the README on GitHub at <https://github.com/telostat/habulara-incubation#readme>
-homepage:       https://github.com/telostat/habulara-incubation#readme
-bug-reports:    https://github.com/telostat/habulara-incubation/issues
+synopsis:       Toolkit for Processing Tabular Data
+description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
+category:       Text, CSV
+homepage:       https://github.com/telostat/habulara#readme
+bug-reports:    https://github.com/telostat/habulara/issues
 author:         Vehbi Sinan Tunalioglu
 maintainer:     vst@vsthost.com
-copyright:      Copyright (c) 2020 Vehbi Sinan Tunalioglu
+copyright:      Copyright (c) 2020 Telostat Pte Ltd
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -23,7 +25,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/telostat/habulara-incubation
+  location: https://github.com/telostat/habulara
 
 library
   exposed-modules:
@@ -66,7 +68,7 @@ library
     , yaml
   default-language: Haskell2010
 
-executable habulara-exe
+executable habulara
   main-is: Main.hs
   other-modules:
       Paths_habulara
