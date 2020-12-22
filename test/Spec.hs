@@ -1,44 +1,9 @@
-# Habulara - Toolkit for Processing Tabular Data
-
-> **Note:** This package is under heavy development. Expect breaking
-> changes without notification until we reach the first major version.
-
-Habulara is a Haskell library and command line application which
-provide high-level means to process tabular data, in particular CSV
-files.
-
-## Installation
-
-```
-stack install habulara
-```
-
-## Usage
-
-### As a standalone application
-
-To process a CSV file as per a given HAB (Habulara mapping
-specification) file:
-
-```
-habulara test/examples/simple.yaml test/examples/simple.csv
-```
-
-To generate Haskell `data` definition:
-
-```
-habulara test/examples/simple.yaml
-```
-
-### As a library
-
-```
 {-# LANGUAGE OverloadedStrings #-}
 
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
-import           Data.Habulara.Dsl
-import           System.IO
+import           Data.Habulara.Dsl          (As(..), FieldSpec(..), FileSpec(..), Op(..), process)
+import           System.IO                  (hPutStrLn, stderr, stdout)
 
 
 main :: IO ()
@@ -57,11 +22,3 @@ fileSpec = FileSpec "Latest Weather Figures" Nothing Nothing ','
   , FieldSpec AsDecimal "tempFahrenheit" (Just "temperature") (Just "Temperature (F)") (Just "Temperature in Fahrenheit") False False [OpDecimal, OpMultiply 9, OpDivideBy 5, OpAdd 32]
   , FieldSpec AsDecimal "precipitation" Nothing (Just "Precipitation (%)") (Just "Precipitation in percentage points") False False [OpDecimal, OpPercentage]
   ]
-```
-
-## License
-
-Copyright Telostat Pte Ltd (c) 2020.
-
-This work is licensed under BSD3. Please check the license file
-included in the source-code.

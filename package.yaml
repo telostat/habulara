@@ -1,0 +1,62 @@
+name:                habulara
+version:             0.0.0.0
+github:              "telostat/habulara"
+license:             BSD3
+author:              "Vehbi Sinan Tunalioglu"
+maintainer:          "vst@vsthost.com"
+copyright:           "Copyright (c) 2020 Telostat Pte Ltd"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+- test/examples/generate.R
+- test/examples/simple.csv
+- test/examples/simple.yaml
+
+synopsis:            Toolkit for Processing Tabular Data
+category:            Text, CSV
+description:         Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- aeson
+- bytestring
+- cassava
+- containers
+- mtl
+- profunctors
+- scientific
+- string-interpolate
+- text
+- time
+- unordered-containers
+- vector
+- yaml
+
+library:
+  source-dirs: src
+  ghc-options:
+  - -Wall
+
+executables:
+  habulara:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    dependencies:
+    - habulara
+
+tests:
+  habulara-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - habulara

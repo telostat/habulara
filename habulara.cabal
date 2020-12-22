@@ -1,0 +1,123 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 6f62b9d5b16eab5d8393fd024765350eaebf9665179dfd86eb05778560d1facc
+
+name:           habulara
+version:        0.0.0.0
+synopsis:       Toolkit for Processing Tabular Data
+description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
+category:       Text, CSV
+homepage:       https://github.com/telostat/habulara#readme
+bug-reports:    https://github.com/telostat/habulara/issues
+author:         Vehbi Sinan Tunalioglu
+maintainer:     vst@vsthost.com
+copyright:      Copyright (c) 2020 Telostat Pte Ltd
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+    test/examples/generate.R
+    test/examples/simple.csv
+    test/examples/simple.yaml
+
+source-repository head
+  type: git
+  location: https://github.com/telostat/habulara
+
+library
+  exposed-modules:
+      Data.Habulara
+      Data.Habulara.Dsl
+      Data.Habulara.Internal.Commons.Convert
+      Data.Habulara.Internal.Commons.Csv
+      Data.Habulara.Internal.Commons.Read
+      Data.Habulara.Internal.Commons.String
+      Data.Habulara.Internal.Commons.Text
+      Data.Habulara.Internal.Commons.Time
+      Data.Habulara.Internal.Dsl.CodeGen
+      Data.Habulara.Internal.Dsl.Compiler
+      Data.Habulara.Internal.Dsl.Types
+      Data.Habulara.Internal.Dsl.Utils
+      Data.Habulara.Internal.Mapping
+      Data.Habulara.Internal.Operators
+      Data.Habulara.Internal.Reading
+      Data.Habulara.Internal.Writing
+      Data.Habulara.Types
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , mtl
+    , profunctors
+    , scientific
+    , string-interpolate
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , yaml
+  default-language: Haskell2010
+
+executable habulara
+  main-is: Main.hs
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , habulara
+    , mtl
+    , profunctors
+    , scientific
+    , string-interpolate
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , yaml
+  default-language: Haskell2010
+
+test-suite habulara-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , habulara
+    , mtl
+    , profunctors
+    , scientific
+    , string-interpolate
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , yaml
+  default-language: Haskell2010
