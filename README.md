@@ -1,5 +1,9 @@
 # Habulara - Toolkit for Processing Tabular Data
 
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/telostat/habulara)
+![GitHub contributors](https://img.shields.io/github/contributors/telostat/habulara)
+![GitHub](https://img.shields.io/github/license/telostat/habulara)
+
 > **Note:** This package is under heavy development. Expect breaking
 > changes without notification until we reach the first major version.
 
@@ -32,7 +36,7 @@ habulara test/examples/simple.yaml
 
 ### As a library
 
-```
+```hs
 {-# LANGUAGE OverloadedStrings #-}
 
 import qualified Data.ByteString.Lazy       as BL
