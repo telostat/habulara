@@ -9,6 +9,9 @@ copyright:           "Copyright (c) 2020 Telostat Pte Ltd"
 extra-source-files:
 - README.md
 - ChangeLog.md
+- test/examples/generate.R
+- test/examples/simple.csv
+- test/examples/simple.yaml
 
 synopsis:            Toolkit for Processing Tabular Data
 category:            Text, CSV

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6f8a0ce201fed4bccac9e231ea4b839296b73d1e1f34dc8aae2185ea4b204f3c
+-- hash: 6f62b9d5b16eab5d8393fd024765350eaebf9665179dfd86eb05778560d1facc
 
 name:           habulara
 version:        0.0.0.0
@@ -22,6 +22,9 @@ build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
+    test/examples/generate.R
+    test/examples/simple.csv
+    test/examples/simple.yaml
 
 source-repository head
   type: git
