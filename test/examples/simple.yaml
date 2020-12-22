@@ -1,0 +1,50 @@
+name: Latest Weather Figures
+dataName: WeatherRecord
+description: >
+  Provides latest weather report figures.
+
+  In addition to what the original file provides, mapped file includes the
+  temperature in Fahrenheit.
+delimiter: ","
+fields:
+- type: Text
+  targetColumn: id
+  shortDescription: ID
+  longDescription: ID of the record
+  allowMissingColumn: false
+  allowEmptyValue: false
+  action: []
+- type: Text
+  targetColumn: name
+  shortDescription: Name
+  longDescription: Name of the record
+  allowMissingColumn: false
+  allowEmptyValue: false
+  action: []
+- type: Decimal
+  targetColumn: tempCelcius
+  sourceColumn: temperature
+  shortDescription: Temperature (C)
+  longDescription: Temperature in Celcius
+  allowMissingColumn: false
+  allowEmptyValue: false
+  action: ["decimal"]
+- type: Decimal
+  targetColumn: tempFahrenheit
+  sourceColumn: temperature
+  shortDescription: Temperature (F)
+  longDescription: Temperature in Fahrenheit
+  allowMissingColumn: false
+  allowEmptyValue: false
+  action:
+  - "decimal"
+  - ["multiply", 9]
+  - ["divideBy", 5]
+  - ["add", 32]
+- type: Decimal
+  targetColumn: precipitation
+  shortDescription: Precipitation
+  longDescription: Precipitation in percentage points
+  allowMissingColumn: false
+  allowEmptyValue: false
+  action: ["decimal", "percentage"]
