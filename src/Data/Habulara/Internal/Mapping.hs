@@ -61,6 +61,12 @@ selectAs f a = asks (HM.lookup f . staticContextRecord) >>= \case
   Just fv -> setFieldValue a fv
 
 
+selectAsOrEmpty :: Field -> Field -> FieldMapper
+selectAsOrEmpty f a = asks (HM.lookup f . staticContextRecord) >>= \case
+  Nothing -> setFieldValue a VEmpty
+  Just fv -> setFieldValue a fv
+
+
 use :: Field -> FieldMapper
 use f = SM.gets (HM.lookup f . dynamicContextBuffer) >>= \case
   Nothing -> EM.throwError $ "No such field found in the buffer record: " <> T.unpack f
