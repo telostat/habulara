@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6f62b9d5b16eab5d8393fd024765350eaebf9665179dfd86eb05778560d1facc
+-- hash: 34496f21df2397275c3d23f19e761fdeafea461a1d5f9ed4b1171b0b084b269f
 
 name:           habulara
-version:        0.0.0.0
+version:        0.0.0.1
 synopsis:       Toolkit for Processing Tabular Data
 description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 category:       Text, CSV
@@ -29,6 +29,11 @@ extra-source-files:
 source-repository head
   type: git
   location: https://github.com/telostat/habulara
+
+flag static
+  description: Use static linking for the main executable
+  manual: True
+  default: False
 
 library
   exposed-modules:
@@ -94,6 +99,8 @@ executable habulara
     , unordered-containers
     , vector
     , yaml
+  if flag(static) && !(os(osx))
+    ld-options: -static -pthread
   default-language: Haskell2010
 
 test-suite habulara-test

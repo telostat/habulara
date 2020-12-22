@@ -17,6 +17,12 @@ synopsis:            Toolkit for Processing Tabular Data
 category:            Text, CSV
 description:         Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 
+flags:
+  static:
+    description: Use static linking for the main executable
+    default: false
+    manual: true
+
 dependencies:
 - base >= 4.7 && < 5
 - aeson
@@ -49,6 +55,11 @@ executables:
     - -Wall
     dependencies:
     - habulara
+    when:
+      - condition: "flag(static) && !(os(osx))"
+        ld-options:
+        - -static
+        - -pthread
 
 tests:
   habulara-test:
