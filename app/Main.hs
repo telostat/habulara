@@ -1,28 +1,22 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
-import qualified Data.ByteString      as B
-import qualified Data.ByteString.Lazy as BL
-import           Data.Habulara.Dsl    (readHabFile, readWriteRecordsWithGeneratedMapper)
-import           System.Environment   (getArgs)
-import           System.Exit          (die)
-import           System.IO            (hPutStrLn, stderr, stdout)
+import qualified Data.ByteString            as B
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import           Data.Habulara.Dsl          (processWithHab)
+import           System.Environment         (getArgs)
+import           System.Exit                (die)
+import           System.IO                  (hPutStrLn, stderr, stdout)
 
 
 main :: IO ()
 main = do
   (habpath, csvpath) <- getProgramArguments =<< getArgs
-  eFs <- readHabFile <$> B.readFile habpath
-  case eFs of
-    Left err -> die $ "Invalid Hab file: " <> err
-    Right fs -> do
-      content <- BL.readFile csvpath
-      result <- readWriteRecordsWithGeneratedMapper fs content stdout
-      case result of
-        Left err -> hPutStrLn stderr $ "Error while reading the file: " <> err
-        Right _  -> pure ()
+  hab <- B.readFile habpath
+  csv <- BL.readFile csvpath
+  case processWithHab hab csv of
+    Left err -> hPutStrLn stderr $ "Error while processing the file: " <> err
+    Right oc -> BLC.hPutStr stdout oc
 
 
 getProgramArguments :: [FilePath] -> IO (FilePath, FilePath)

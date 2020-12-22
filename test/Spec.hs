@@ -1,17 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import qualified Data.ByteString.Lazy as BL
-import           Data.Habulara.Dsl    (As(..), FieldSpec(..), FileSpec(..), Op(..), readWriteRecordsWithGeneratedMapper)
-import           System.IO            (hPutStrLn, stderr, stdout)
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import           Data.Habulara.Dsl          (As(..), FieldSpec(..), FileSpec(..), Op(..), process)
+import           System.IO                  (hPutStrLn, stderr, stdout)
 
 
 main :: IO ()
 main = do
   content <- BL.readFile "test/examples/simple.csv"
-  result <- readWriteRecordsWithGeneratedMapper fileSpec content stdout
-  case result of
-    Left err -> hPutStrLn stderr $ "Error while reading the file: " <> err
-    Right _  -> pure ()
+  case process fileSpec content of
+    Left err -> hPutStrLn stderr $ "Error while processing the file: " <> err
+    Right oc -> BLC.hPutStr stdout oc
 
 
 fileSpec :: FileSpec
