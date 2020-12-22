@@ -21,6 +21,7 @@ dependencies:
 - mtl
 - profunctors
 - scientific
+- string-interpolate
 - text
 - time
 - unordered-containers
