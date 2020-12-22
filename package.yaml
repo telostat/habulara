@@ -10,17 +10,11 @@ extra-source-files:
 - README.md
 - ChangeLog.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/telostat/habulara-incubation#readme>
 
 dependencies:
 - base >= 4.7 && < 5
+- aeson
 - bytestring
 - cassava
 - containers
@@ -31,6 +25,7 @@ dependencies:
 - time
 - unordered-containers
 - vector
+- yaml
 
 library:
   source-dirs: src
@@ -40,18 +35,7 @@ library:
 executables:
   habulara-exe:
     main:                Main.hs
-    source-dirs:         app/dummy
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    - -Wall
-    dependencies:
-    - habulara
-
-  habulara-saxo-exe:
-    main:                Main.hs
-    source-dirs:         app/saxo
+    source-dirs:         app
     ghc-options:
     - -threaded
     - -rtsopts
