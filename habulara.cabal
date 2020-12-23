@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 34496f21df2397275c3d23f19e761fdeafea461a1d5f9ed4b1171b0b084b269f
+-- hash: 94dc6af4a22b631c2b91fed28b1d8c053b9096b5fe46a4affd366b7b346ae226
 
 name:           habulara
-version:        0.0.0.1
+version:        0.0.0.2
 synopsis:       Toolkit for Processing Tabular Data
 description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 category:       Text, CSV
