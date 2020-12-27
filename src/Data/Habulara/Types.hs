@@ -17,6 +17,7 @@ import           Data.Scientific        (Scientific)
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as TE
 import           Data.Time              (Day)
+import           Data.Time.LocalTime    (LocalTime)
 
 
 -- $core
@@ -53,12 +54,13 @@ type Field = T.Text
 -- | Record field value type.
 data Value =
     VEmpty
-  | VRaw     !B.ByteString
-  | VInt     !Integer
-  | VText    !T.Text
-  | VDecimal !Scientific
-  | VBoolean !Bool
-  | VDate    !Day
+  | VRaw      !B.ByteString
+  | VInt      !Integer
+  | VText     !T.Text
+  | VDecimal  !Scientific
+  | VBoolean  !Bool
+  | VDate     !Day
+  | VDateTime !LocalTime
   deriving (Show)
 
 instance Csv.ToField Value where
@@ -70,6 +72,7 @@ instance Csv.ToField Value where
   toField (VBoolean True)  = "True"
   toField (VBoolean False) = "False"
   toField (VDate d)        = BC.pack $ show d
+  toField (VDateTime x)    = BC.pack $ show x
 
 instance Csv.FromField Value where
   parseField x
