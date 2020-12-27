@@ -65,6 +65,7 @@ data As =
   | AsDecimal
   | AsBoolean
   | AsDate
+  | AsDateTime
   deriving (Show)
 
 instance FromJSON As where
@@ -73,14 +74,15 @@ instance FromJSON As where
 
 
 asFromString :: MonadFail m => String -> m As
-asFromString "Empty"   = pure AsEmpty
-asFromString "Raw"     = pure AsRaw
-asFromString "Int"     = pure AsInt
-asFromString "Text"    = pure AsText
-asFromString "Decimal" = pure AsDecimal
-asFromString "Boolean" = pure AsBoolean
-asFromString "Date"    = pure AsDate
-asFromString x         = fail $ "Unrecognized 'As' value: " <> x
+asFromString "Empty"    = pure AsEmpty
+asFromString "Raw"      = pure AsRaw
+asFromString "Int"      = pure AsInt
+asFromString "Text"     = pure AsText
+asFromString "Decimal"  = pure AsDecimal
+asFromString "Boolean"  = pure AsBoolean
+asFromString "Date"     = pure AsDate
+asFromString "DateTime" = pure AsDateTime
+asFromString x          = fail $ "Unrecognized 'As' value: " <> x
 
 
 data Op =
@@ -91,6 +93,7 @@ data Op =
   | OpDecimal
   | OpBoolean
   | OpDate
+  | OpDateTime
   | OpTrim
   | OpSanitize
   | OpLower
@@ -104,6 +107,7 @@ data Op =
   | OpConstant !T.Text
   | OpConstantEmpty
   | OpParseDate !String
+  | OpParseDateTime !String
   | OpBooleanMap !T.Text !T.Text
   | OpBooleanMapCI !T.Text !T.Text
   | OpAdd !Scientific
@@ -140,6 +144,7 @@ instance FromJSON Op where
       attemptFromArray [String "oneOfText", String x] = pure $ OpOneOfText $ S.fromList $ T.split (== '|') x  -- TODO: handle empty
       attemptFromArray [String "constant", String x] = pure $ OpConstant x
       attemptFromArray [String "parseDate", String x] = pure $ OpParseDate (T.unpack x)
+      attemptFromArray [String "parseDateTime", String x] = pure $ OpParseDateTime (T.unpack x)
       attemptFromArray [String "booleanMap", String x, String y] = pure $ OpBooleanMap x y
       attemptFromArray [String "booleanMapCI", String x, String y] = pure $ OpBooleanMapCI x y
       attemptFromArray [String "add", Number x] = pure $ OpAdd x
@@ -160,6 +165,7 @@ opToOperator OpText               = O.vText
 opToOperator OpDecimal            = O.vDecimal
 opToOperator OpBoolean            = O.vBoolean
 opToOperator OpDate               = O.vDate
+opToOperator OpDateTime           = O.vDateTime
 opToOperator OpTrim               = O.trim
 opToOperator OpSanitize           = O.sanitize
 opToOperator OpLower              = O.lower
@@ -173,6 +179,7 @@ opToOperator (OpOneOfText x)      = O.oneOfText x
 opToOperator (OpConstant x)       = O.constant x
 opToOperator OpConstantEmpty      = O.constantEmpty
 opToOperator (OpParseDate x)      = O.parseDate x
+opToOperator (OpParseDateTime x)  = O.parseDateTime x
 opToOperator (OpBooleanMap x y)   = O.booleanMap x y
 opToOperator (OpBooleanMapCI x y) = O.booleanMapCI x y
 opToOperator (OpAdd x)            = O.add x

@@ -15,7 +15,7 @@ import           Data.Scientific                        (Scientific)
 import qualified Data.Set                               as S
 import qualified Data.Text                              as T
 import qualified Data.Text.Encoding                     as TE
-import           Data.Time                              (Day)
+import           Data.Time                              (Day, LocalTime(..), midnight)
 
 
 -- ** Value Primitives
@@ -69,6 +69,10 @@ date :: Day -> Value
 date = VDate
 
 
+datetime :: LocalTime -> Value
+datetime = VDateTime
+
+
 -- ** Value Conversions
 
 
@@ -85,6 +89,7 @@ vRaw (VDecimal x)     = VRaw <$> CC.bsFromDecimal x
 vRaw (VBoolean False) = pure $ VRaw "False"
 vRaw (VBoolean True)  = pure $ VRaw "True"
 vRaw (VDate x)        = VRaw <$> CC.bsFromDay x
+vRaw (VDateTime x)    = VRaw <$> CC.bsFromLocalTime x
 
 
 vInt :: ValueOperator
@@ -96,6 +101,7 @@ vInt (VDecimal x)     = VInt <$> CC.integerFromScientific x
 vInt (VBoolean False) = pure $ VInt 0
 vInt (VBoolean True)  = pure $ VInt 1
 vInt (VDate x)        = VInt <$> CC.integerFromDay x
+vInt (VDateTime x)    = VInt <$> CC.integerFromLocalTime x
 
 
 vText :: ValueOperator
@@ -107,6 +113,7 @@ vText (VDecimal x)     = VText <$> CC.textFromDecimal x
 vText (VBoolean False) = pure $ VText "False"
 vText (VBoolean True)  = pure $ VText "True"
 vText (VDate x)        = VText <$> CC.textFromDay x
+vText (VDateTime x)    = VText <$> CC.textFromLocalTime x
 
 
 vDecimal :: ValueOperator
@@ -117,7 +124,8 @@ vDecimal (VText x)        = VDecimal <$> CR.readHMT x
 vDecimal x@(VDecimal _)   = pure x
 vDecimal (VBoolean False) = pure $ VDecimal 0
 vDecimal (VBoolean True)  = pure $ VDecimal 1
-vDecimal (VDate x)        = VInt <$> CC.integerFromDay x
+vDecimal (VDate x)        = VDecimal . fromInteger <$> CC.integerFromDay x
+vDecimal (VDateTime x)    = VDecimal . fromRational <$> CC.rationalFromLocalTime x
 
 
 vBoolean :: ValueOperator
@@ -128,16 +136,29 @@ vBoolean (VText x)      = VBoolean <$> CR.readHMT x
 vBoolean (VDecimal x)   = pure $ VBoolean (x /= 0)
 vBoolean x@(VBoolean _) = pure x
 vBoolean (VDate _)      = pure $ VBoolean True
+vBoolean (VDateTime _)  = pure $ VBoolean True
 
 
 vDate :: ValueOperator
-vDate VEmpty       = pure VEmpty
-vDate (VRaw x)     = VDate <$> CR.readHMB x
-vDate (VInt x)     = VDate <$> CC.dayFromInteger x
-vDate (VText x)    = VDate <$> CR.readHMT x
-vDate (VDecimal x) = VDate <$> (CC.dayFromInteger =<< CC.integerFromScientific x)
-vDate (VBoolean _) = throwError "Can not create date from boolean."
-vDate x@(VDate _)  = pure x
+vDate VEmpty        = pure VEmpty
+vDate (VRaw x)      = VDate <$> CR.readHMB x
+vDate (VInt x)      = VDate <$> CC.dayFromInteger x
+vDate (VText x)     = VDate <$> CR.readHMT x
+vDate (VDecimal x)  = VDate <$> (CC.dayFromInteger =<< CC.integerFromScientific x)
+vDate (VBoolean _)  = throwError "Can not create date from boolean."
+vDate x@(VDate _)   = pure x
+vDate (VDateTime x) = pure $ VDate (localDay x)
+
+
+vDateTime :: ValueOperator
+vDateTime VEmpty          = pure VEmpty
+vDateTime (VRaw x)        = VDateTime <$> CR.readHMB x
+vDateTime (VInt x)        = VDateTime <$> CC.dateTimeFromRational (toRational x)
+vDateTime (VText x)       = VDateTime <$> CR.readHMT x
+vDateTime (VDecimal x)    = VDateTime <$> CC.dateTimeFromRational (toRational x)
+vDateTime (VBoolean _)    = throwError "Can not create date/time from boolean."
+vDateTime (VDate x)       = pure $ VDateTime (LocalTime x midnight)
+vDateTime x@(VDateTime _) = pure x
 
 
 -- ** Text Operators
@@ -359,7 +380,7 @@ constantEmpty VEmpty = pure VEmpty
 constantEmpty x      = throwError $ "Encountered value while expecting nothing: " <> show x
 
 
--- ** Date Operators
+-- ** Date/Time Operators
 
 -- >>> trim $ raw " a " :: Either String Value
 -- Right (VRaw "a")
@@ -369,6 +390,14 @@ parseDate fmt (VText x) = VDate <$> CC.parseDateFromString fmt (T.unpack x)
 parseDate fmt (VRaw x)  = VDate <$> CC.parseDateFromString fmt (BC.unpack x)
 parseDate _ _           = throwError "Operator can only be applied to values of textual types."
 
+
+-- >>> trim $ raw " a " :: Either String Value
+-- Right (VRaw "a")
+parseDateTime :: String -> ValueOperator
+parseDateTime _ VEmpty      = pure VEmpty
+parseDateTime fmt (VText x) = VDateTime <$> CC.parseLocalTimeFromString fmt (T.unpack x)
+parseDateTime fmt (VRaw x)  = VDateTime <$> CC.parseLocalTimeFromString fmt (BC.unpack x)
+parseDateTime _ _           = throwError "Operator can only be applied to values of textual types."
 
 -- ** Boolean Operators
 
