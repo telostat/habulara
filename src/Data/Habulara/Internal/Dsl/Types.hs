@@ -27,6 +27,7 @@ data FileSpec = FileSpec
   , fileSpecDataName   :: !(Maybe T.Text)
   , fileSpecDecription :: !(Maybe T.Text)
   , fileSpecDelimiter  :: !Char
+  , fileSpecEncoding   :: !(Maybe T.Text)
   , fileSpecFields     :: ![FieldSpec]
   } deriving (Generic, Show)
 
@@ -35,7 +36,7 @@ instance FromJSON FileSpec where
 
 
 defaultFileSpec :: FileSpec
-defaultFileSpec = FileSpec "Records" Nothing Nothing ',' []
+defaultFileSpec = FileSpec "Records" Nothing Nothing ',' Nothing []
 
 
 data FieldSpec = FieldSpec
