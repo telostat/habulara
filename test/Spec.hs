@@ -15,7 +15,7 @@ main = do
 
 
 fileSpec :: FileSpec
-fileSpec = FileSpec "Latest Weather Figures" Nothing Nothing ','
+fileSpec = FileSpec "Latest Weather Figures" Nothing Nothing ',' Nothing
   [ FieldSpec AsText "id" Nothing (Just "ID") (Just "ID of the record") False False []
   , FieldSpec AsText "name" Nothing (Just "Name") (Just "Name of the record") False False []
   , FieldSpec AsDecimal "tempCelcius" (Just "temperature") (Just "Temperature (C)") (Just "Temperature in Celcius") False False [OpDecimal]
