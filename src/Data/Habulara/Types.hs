@@ -54,7 +54,6 @@ type Field = T.Text
 -- | Record field value type.
 data Value =
     VEmpty
-  | VRaw      !B.ByteString
   | VInt      !Integer
   | VText     !T.Text
   | VDecimal  !Scientific
@@ -65,7 +64,6 @@ data Value =
 
 instance Csv.ToField Value where
   toField VEmpty           = B.empty
-  toField (VRaw x)         = x
   toField (VInt i)         = BC.pack $ show i
   toField (VText t)        = TE.encodeUtf8 t
   toField (VDecimal d)     = BC.pack $ show d
@@ -75,9 +73,10 @@ instance Csv.ToField Value where
   toField (VDateTime x)    = BC.pack $ show x
 
 instance Csv.FromField Value where
+  -- TODO: Use decodeUtf8' to catch UnicodeException and propagate.
   parseField x
     | B.null x  = pure VEmpty
-    | otherwise = pure $ VRaw x
+    | otherwise = pure . VText . TE.decodeUtf8 $ x
 
 
 -- * Mapping

@@ -45,7 +45,6 @@ generateDataField tname padlen1 padlen2 fs = T.strip [i|#{prefix}#{name}#{paddin
 
 toHaskellType :: As -> T.Text
 toHaskellType AsEmpty    = "()"
-toHaskellType AsRaw      = "ByteString"
 toHaskellType AsInt      = "Integer"
 toHaskellType AsText     = "Text"
 toHaskellType AsDecimal  = "Scientific"

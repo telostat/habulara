@@ -55,12 +55,11 @@ instance FromJSON FieldSpec where
 
 
 defaultFieldSpec :: [Op] -> FieldSpec
-defaultFieldSpec = FieldSpec AsRaw "column" Nothing Nothing Nothing True True
+defaultFieldSpec = FieldSpec AsText "column" Nothing Nothing Nothing True True
 
 
 data As =
     AsEmpty
-  | AsRaw
   | AsInt
   | AsText
   | AsDecimal
@@ -76,7 +75,6 @@ instance FromJSON As where
 
 asFromString :: MonadFail m => String -> m As
 asFromString "Empty"    = pure AsEmpty
-asFromString "Raw"      = pure AsRaw
 asFromString "Int"      = pure AsInt
 asFromString "Text"     = pure AsText
 asFromString "Decimal"  = pure AsDecimal
@@ -88,7 +86,6 @@ asFromString x          = fail $ "Unrecognized 'As' value: " <> x
 
 data Op =
     OpEmpty
-  | OpRaw
   | OpInt
   | OpText
   | OpDecimal
@@ -122,7 +119,6 @@ data Op =
 
 instance FromJSON Op where
   parseJSON (String "empty") = pure OpEmpty
-  parseJSON (String "raw") = pure OpRaw
   parseJSON (String "int") = pure OpInt
   parseJSON (String "text") = pure OpText
   parseJSON (String "decimal") = pure OpDecimal
@@ -160,7 +156,6 @@ instance FromJSON Op where
 
 opToOperator :: Op -> ValueOperator
 opToOperator OpEmpty              = O.vEmpty
-opToOperator OpRaw                = O.vRaw
 opToOperator OpInt                = O.vInt
 opToOperator OpText               = O.vText
 opToOperator OpDecimal            = O.vDecimal

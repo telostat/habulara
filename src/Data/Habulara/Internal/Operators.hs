@@ -5,8 +5,6 @@
 module Data.Habulara.Internal.Operators where
 
 import           Control.Monad.Except                   (MonadError(throwError))
-import qualified Data.ByteString                        as B
-import qualified Data.ByteString.Char8                  as BC
 import qualified Data.Habulara.Internal.Commons.Convert as CC
 import qualified Data.Habulara.Internal.Commons.Read    as CR
 import qualified Data.Habulara.Internal.Commons.Text    as CT
@@ -14,7 +12,6 @@ import           Data.Habulara.Types                    (HabularaErrorM, Value(.
 import           Data.Scientific                        (Scientific)
 import qualified Data.Set                               as S
 import qualified Data.Text                              as T
-import qualified Data.Text.Encoding                     as TE
 import           Data.Time                              (Day, LocalTime(..), midnight)
 
 
@@ -23,12 +20,6 @@ import           Data.Time                              (Day, LocalTime(..), mid
 
 empty :: Value
 empty = VEmpty
-
-
-raw :: B.ByteString -> Value
-raw x
-  | B.null x = VEmpty
-  | otherwise = VRaw x
 
 
 int :: Integer -> Value
@@ -80,21 +71,8 @@ vEmpty :: ValueOperator
 vEmpty _ = pure VEmpty
 
 
-vRaw :: ValueOperator
-vRaw VEmpty           = pure VEmpty
-vRaw x@(VRaw _)       = pure x
-vRaw (VInt x)         = VRaw <$> CC.bsFromInteger x
-vRaw (VText x)        = pure $ VRaw (TE.encodeUtf8 x)
-vRaw (VDecimal x)     = VRaw <$> CC.bsFromDecimal x
-vRaw (VBoolean False) = pure $ VRaw "False"
-vRaw (VBoolean True)  = pure $ VRaw "True"
-vRaw (VDate x)        = VRaw <$> CC.bsFromDay x
-vRaw (VDateTime x)    = VRaw <$> CC.bsFromLocalTime x
-
-
 vInt :: ValueOperator
 vInt VEmpty           = pure VEmpty
-vInt (VRaw x)         = VInt <$> CR.readHMB x
 vInt x@(VInt _)       = pure x
 vInt (VText x)        = VInt <$> CR.readHMT x
 vInt (VDecimal x)     = VInt <$> CC.integerFromScientific x
@@ -106,7 +84,6 @@ vInt (VDateTime x)    = VInt <$> CC.integerFromLocalTime x
 
 vText :: ValueOperator
 vText VEmpty           = pure VEmpty
-vText (VRaw x)         = pure $ VText (TE.decodeUtf8 x)
 vText (VInt x)         = VText <$> CC.textFromInteger x
 vText x@(VText _)      = pure x
 vText (VDecimal x)     = VText <$> CC.textFromDecimal x
@@ -118,7 +95,6 @@ vText (VDateTime x)    = VText <$> CC.textFromLocalTime x
 
 vDecimal :: ValueOperator
 vDecimal VEmpty           = pure VEmpty
-vDecimal (VRaw x)         = VDecimal <$> CR.readHMB x
 vDecimal (VInt x)         = pure (VDecimal $ fromInteger x)
 vDecimal (VText x)        = VDecimal <$> CR.readHMT x
 vDecimal x@(VDecimal _)   = pure x
@@ -130,7 +106,6 @@ vDecimal (VDateTime x)    = VDecimal . fromRational <$> CC.rationalFromLocalTime
 
 vBoolean :: ValueOperator
 vBoolean VEmpty         = pure VEmpty
-vBoolean (VRaw x)       = VBoolean <$> CR.readHMB x
 vBoolean (VInt x)       = pure $ VBoolean (x /= 0)
 vBoolean (VText x)      = VBoolean <$> CR.readHMT x
 vBoolean (VDecimal x)   = pure $ VBoolean (x /= 0)
@@ -141,7 +116,6 @@ vBoolean (VDateTime _)  = pure $ VBoolean True
 
 vDate :: ValueOperator
 vDate VEmpty        = pure VEmpty
-vDate (VRaw x)      = VDate <$> CR.readHMB x
 vDate (VInt x)      = VDate <$> CC.dayFromInteger x
 vDate (VText x)     = VDate <$> CR.readHMT x
 vDate (VDecimal x)  = VDate <$> (CC.dayFromInteger =<< CC.integerFromScientific x)
@@ -152,7 +126,6 @@ vDate (VDateTime x) = pure $ VDate (localDay x)
 
 vDateTime :: ValueOperator
 vDateTime VEmpty          = pure VEmpty
-vDateTime (VRaw x)        = VDateTime <$> CR.readHMB x
 vDateTime (VInt x)        = VDateTime <$> CC.dateTimeFromRational (toRational x)
 vDateTime (VText x)       = VDateTime <$> CR.readHMT x
 vDateTime (VDecimal x)    = VDateTime <$> CC.dateTimeFromRational (toRational x)
@@ -181,10 +154,9 @@ vDateTime x@(VDateTime _) = pure x
 -- >>> trim $ raw " a " :: Either String Value
 -- Right (VRaw "a")
 trim :: ValueOperator
-trim VEmpty     = pure VEmpty
-trim (VText x)  = pure $ trimmedText x
-trim x@(VRaw _) = vText x >>= trim >>= vRaw
-trim _          = throwError "Operator can only be applied to values of textual types."
+trim VEmpty    = pure VEmpty
+trim (VText x) = pure $ trimmedText x
+trim _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> sanitize $ text "" :: Either String Value
@@ -198,10 +170,9 @@ trim _          = throwError "Operator can only be applied to values of textual 
 -- >>> sanitize $ text " a \t\r\n b" :: Either String Value
 -- Right (VText "a b")
 sanitize :: ValueOperator
-sanitize VEmpty     = pure VEmpty
-sanitize (VText x)  = pure $ sanitizedText x
-sanitize x@(VRaw _) = vText x >>= sanitize >>= vRaw
-sanitize _          = throwError "Operator can only be applied to values of textual types."
+sanitize VEmpty    = pure VEmpty
+sanitize (VText x) = pure $ sanitizedText x
+sanitize _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> lower $ text "" :: Either String Value
@@ -221,10 +192,9 @@ sanitize _          = throwError "Operator can only be applied to values of text
 -- >>> lower $ raw "A" :: Either String Value
 -- Right (VRaw "AA")
 lower :: ValueOperator
-lower VEmpty     = pure VEmpty
-lower (VText x)  = pure $ VText (T.toLower x)
-lower x@(VRaw _) = vText x >>= lower >>= vRaw
-lower _          = throwError "Operator can only be applied to values of textual types."
+lower VEmpty    = pure VEmpty
+lower (VText x) = pure $ VText (T.toLower x)
+lower _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> upper $ text "" :: Either String Value
@@ -244,10 +214,9 @@ lower _          = throwError "Operator can only be applied to values of textual
 -- >>> upper $ raw "aa" :: Either String Value
 -- Right (VRaw "AA")
 upper :: ValueOperator
-upper VEmpty     = pure VEmpty
-upper (VText x)  = pure $ VText (T.toUpper x)
-upper x@(VRaw _) = vText x >>= upper >>= vRaw
-upper _          = throwError "Operator can only be applied to values of textual types."
+upper VEmpty    = pure VEmpty
+upper (VText x) = pure $ VText (T.toUpper x)
+upper _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> capitalize $ text "" :: Either String Value
@@ -267,10 +236,9 @@ upper _          = throwError "Operator can only be applied to values of textual
 -- >>> capitalize $ raw "aa" :: Either String Value
 -- Right (VRaw "Aa")
 capitalize :: ValueOperator
-capitalize VEmpty     = pure VEmpty
-capitalize (VText x)  = pure $ VText (CT.capitalize x)
-capitalize x@(VRaw _) = vText x >>= capitalize >>= vRaw
-capitalize _          = throwError "Operator can only be applied to values of textual types."
+capitalize VEmpty    = pure VEmpty
+capitalize (VText x) = pure $ VText (CT.capitalize x)
+capitalize _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> append "a" $ text "" :: Either String Value
@@ -280,10 +248,9 @@ capitalize _          = throwError "Operator can only be applied to values of te
 -- >>> append "a" $ text "x " :: Either String Value
 -- Right (VText "x a")
 append :: T.Text -> ValueOperator
-append _ VEmpty     = pure VEmpty
-append s (VText x)  = pure $ VText (x <> s)
-append s x@(VRaw _) = vText x >>= append s >>= vRaw
-append _ _          = throwError "Operator can only be applied to values of textual types."
+append _ VEmpty    = pure VEmpty
+append s (VText x) = pure $ VText (x <> s)
+append _ _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> prepend "a" $ text "" :: Either String Value
@@ -293,10 +260,9 @@ append _ _          = throwError "Operator can only be applied to values of text
 -- >>> prepend "a" $ text "x " :: Either String Value
 -- Right (VText "ax ")
 prepend :: T.Text -> ValueOperator
-prepend _ VEmpty     = pure VEmpty
-prepend p (VText x)  = pure $ VText (p <> x)
-prepend p x@(VRaw _) = vText x >>= prepend p >>= vRaw
-prepend _ _          = throwError "Operator can only be applied to values of textual types."
+prepend _ VEmpty    = pure VEmpty
+prepend p (VText x) = pure $ VText (p <> x)
+prepend _ _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> splitHead '/' $ text "" :: Either String Value
@@ -314,10 +280,9 @@ prepend _ _          = throwError "Operator can only be applied to values of tex
 -- >>> splitHead '/' $ text "a/b/c" :: Either String Value
 -- Right (VText "a")
 splitHead :: Char -> ValueOperator
-splitHead _ VEmpty     = pure VEmpty
-splitHead s (VText x)  = pure $ text $ T.takeWhile (/= s) x
-splitHead s x@(VRaw _) = vText x >>= splitHead s >>= vRaw
-splitHead _ _          = throwError "Operator can only be applied to values of textual types."
+splitHead _ VEmpty    = pure VEmpty
+splitHead s (VText x) = pure $ text $ T.takeWhile (/= s) x
+splitHead _ _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> splitTail '/' $ text "" :: Either String Value
@@ -335,10 +300,9 @@ splitHead _ _          = throwError "Operator can only be applied to values of t
 -- >>> splitTail '/' $ text "a/b/c" :: Either String Value
 -- Right (VText "b/c")
 splitTail :: Char -> ValueOperator
-splitTail _ VEmpty     = pure VEmpty
-splitTail s (VText x)  = pure $ text $ T.drop 1 $ T.dropWhile (/= s) x
-splitTail s x@(VRaw _) = vText x >>= splitTail s >>= vRaw
-splitTail _ _          = throwError "Operator can only be applied to values of textual types."
+splitTail _ VEmpty    = pure VEmpty
+splitTail s (VText x) = pure $ text $ T.drop 1 $ T.dropWhile (/= s) x
+splitTail _ _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> oneOfText (S.fromList ["A", "B", "C"]) $ text "" :: Either String Value
@@ -352,7 +316,6 @@ splitTail _ _          = throwError "Operator can only be applied to values of t
 oneOfText :: S.Set T.Text -> ValueOperator
 oneOfText _ VEmpty      = pure VEmpty
 oneOfText s x@(VText v) = x <$ checkTextSet s v
-oneOfText s x@(VRaw _)  = vText x >>= oneOfText s >>= vRaw
 oneOfText _ _           = throwError "Operator can only be applied to values of textual types."
 
 
@@ -365,7 +328,6 @@ checkTextSet s x
 constant :: T.Text -> ValueOperator
 constant _ VEmpty      = pure VEmpty
 constant s x@(VText v) = x <$ checkConstant s v
-constant s x@(VRaw _)  = vText x >>= constant s >>= vRaw
 constant _ _           = throwError "Operator can only be applied to values of textual types."
 
 
@@ -387,7 +349,6 @@ constantEmpty x      = throwError $ "Encountered value while expecting nothing: 
 parseDate :: String -> ValueOperator
 parseDate _ VEmpty      = pure VEmpty
 parseDate fmt (VText x) = VDate <$> CC.parseDateFromString fmt (T.unpack x)
-parseDate fmt (VRaw x)  = VDate <$> CC.parseDateFromString fmt (BC.unpack x)
 parseDate _ _           = throwError "Operator can only be applied to values of textual types."
 
 
@@ -396,7 +357,6 @@ parseDate _ _           = throwError "Operator can only be applied to values of 
 parseDateTime :: String -> ValueOperator
 parseDateTime _ VEmpty      = pure VEmpty
 parseDateTime fmt (VText x) = VDateTime <$> CC.parseLocalTimeFromString fmt (T.unpack x)
-parseDateTime fmt (VRaw x)  = VDateTime <$> CC.parseLocalTimeFromString fmt (BC.unpack x)
 parseDateTime _ _           = throwError "Operator can only be applied to values of textual types."
 
 -- ** Boolean Operators
@@ -411,10 +371,9 @@ parseDateTime _ _           = throwError "Operator can only be applied to values
 -- >>> booleanMap "Yes" "No" $ text "HEBELE" :: Either String Value
 -- Left "Unkown value for boolean map: HEBELE"
 booleanMap :: T.Text -> T.Text -> ValueOperator
-booleanMap _ _ VEmpty     = pure VEmpty
-booleanMap t f (VText x)  = VBoolean <$> checkBooleanMap t f x
-booleanMap t f x@(VRaw _) = vText x >>= booleanMap t f >>= vRaw
-booleanMap _ _ _          = throwError "Operator can only be applied to values of textual types."
+booleanMap _ _ VEmpty    = pure VEmpty
+booleanMap t f (VText x) = VBoolean <$> checkBooleanMap t f x
+booleanMap _ _ _         = throwError "Operator can only be applied to values of textual types."
 
 
 -- >>> booleanMapCI "Yes" "No" $ text "Yes" :: Either String Value
@@ -428,7 +387,6 @@ booleanMap _ _ _          = throwError "Operator can only be applied to values o
 booleanMapCI :: T.Text -> T.Text -> ValueOperator
 booleanMapCI _ _ VEmpty      = pure VEmpty
 booleanMapCI t f x@(VText _) = upper x >>= booleanMap (T.toUpper t) (T.toUpper f)
-booleanMapCI t f x@(VRaw _)  = vText x >>= booleanMapCI t f >>= vRaw
 booleanMapCI _ _ _           = throwError "Operator can only be applied to values of textual types."
 
 
