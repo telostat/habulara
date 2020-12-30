@@ -23,12 +23,12 @@ import           GHC.Generics                          (Generic)
 
 
 data FileSpec = FileSpec
-  { fileSpecName       :: !T.Text
-  , fileSpecDataName   :: !(Maybe T.Text)
-  , fileSpecDecription :: !(Maybe T.Text)
-  , fileSpecDelimiter  :: !Char
-  , fileSpecEncoding   :: !(Maybe T.Text)
-  , fileSpecFields     :: ![FieldSpec]
+  { fileSpecName        :: !T.Text
+  , fileSpecDataName    :: !(Maybe T.Text)
+  , fileSpecDescription :: !(Maybe T.Text)
+  , fileSpecDelimiter   :: !Char
+  , fileSpecEncoding    :: !(Maybe T.Text)
+  , fileSpecFields      :: ![FieldSpec]
   } deriving (Generic, Show)
 
 instance FromJSON FileSpec where
