@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 48de534c746d0b70a725a96fb1429a95617f426d558f2d8496f13351d29da7a0
+-- hash: c81191143b4787b65269640a203f0fa9b19f94dfa3cdeb0647dae58c5edfb5d2
 
 name:           habulara
 version:        0.0.0.2
@@ -103,6 +103,34 @@ executable habulara
     , yaml
   if flag(static) && !(os(osx))
     ld-options: -static -pthread
+  default-language: Haskell2010
+
+test-suite habulara-doctest
+  type: exitcode-stdio-1.0
+  main-is: doctest.hs
+  other-modules:
+      Paths_habulara
+  hs-source-dirs:
+      ./.
+  ghc-options: -threaded
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , cassava
+    , containers
+    , doctest
+    , habulara
+    , iconv
+    , mtl
+    , profunctors
+    , scientific
+    , string-interpolate
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , yaml
   default-language: Haskell2010
 
 test-suite habulara-test

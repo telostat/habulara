@@ -72,3 +72,12 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - habulara
+
+  habulara-doctest:
+    main:                doctest.hs
+    source-dirs:         .
+    ghc-options:
+    - -threaded
+    dependencies:
+    - habulara
+    - doctest
