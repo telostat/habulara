@@ -116,9 +116,15 @@ withWords = dimap T.words T.unwords
 -- "Aa"
 -- >>> capitalize "aa aa"
 -- "Aa aa"
+-- >>> capitalize "aA aA"
+-- "Aa aa"
 -- >>> withWords (fmap capitalize) "aa aa"
+-- "Aa Aa"
+-- >>> withWords (fmap capitalize) "aA aA"
 -- "Aa Aa"
 -- >>> withWords (fmap capitalize) "aa aa" == T.toTitle "aa aa"
 -- True
+-- >>> withWords (fmap capitalize) "aA aA" == T.toTitle "aA aA"
+-- True
 capitalize :: T.Text -> T.Text
-capitalize x = T.toUpper (T.take 1 x) <> T.drop 1 x
+capitalize x = T.toUpper (T.take 1 x) <> T.toLower (T.drop 1 x)
