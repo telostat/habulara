@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 11b06c1c32b72d921e8e37a9da74b8d0be096d255623db856c5321c79348287e
+-- hash: e368a506ae95d4260f679f7b1408af611c885c80227e168825f04b98d5df720b
 
 name:           habulara
 version:        0.0.0.2
@@ -38,14 +38,9 @@ flag static
 library
   exposed-modules:
       Data.Habulara
-      Data.Habulara.Core.Examples
-      Data.Habulara.Core.Mapping
-      Data.Habulara.Core.Operations
-      Data.Habulara.Core.Types.Class
-      Data.Habulara.Core.Types.Error
-      Data.Habulara.Core.Types.IO
-      Data.Habulara.Core.Types.Record
-      Data.Habulara.Core.Types.Value
+      Data.Habulara.Core.Class
+      Data.Habulara.Core.Mapper
+      Data.Habulara.Core.Types
       Data.Habulara.Dsl
       Data.Habulara.Internal.Commons.Convert
       Data.Habulara.Internal.Commons.Csv
@@ -145,6 +140,7 @@ test-suite habulara-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Core.Examples
       Paths_habulara
   hs-source-dirs:
       test
