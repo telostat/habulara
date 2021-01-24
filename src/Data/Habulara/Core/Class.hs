@@ -20,6 +20,7 @@ import           System.IO              (hPutStrLn, stderr)
 -- introduce some complexity to 'MonadHabulara' which we may wish to avoid.
 data HabularaError =
     HabularaErrorEmpty
+  | HabularaErrorRead String
   | HabularaErrorValueConversion String
   | HabularaErrorSimple T.Text
   | HabularaErrorOperation T.Text
