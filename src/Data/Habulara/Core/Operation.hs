@@ -2,21 +2,16 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Habulara.Core.Mapper where
-
+module Data.Habulara.Core.Operation where
 
 import           Control.Applicative      (Alternative((<|>)))
 import           Control.Monad.Except     (MonadError(throwError))
 import           Control.Monad.Reader     (MonadReader, asks)
 import           Control.Monad.State      (MonadState(get, put), gets)
-import           Data.Habulara.Core.Class (HabularaError(HabularaErrorOperation), MonadHabulara)
-import           Data.Habulara.Core.Types (Label, Record, Value(VEmpty))
+import           Data.Habulara.Core.Class (HabularaError(..), MonadHabulara)
+import           Data.Habulara.Core.Types (Label, Record, Value(..))
 import qualified Data.HashMap.Strict      as HM
 import qualified Data.Text                as T
-
-
--- | 'MonadHabulara' constraint for operations.
-type Operation m = MonadHabulara OperationEnvar OperationState m
 
 
 -- | Environment type for 'Operation'.
@@ -32,6 +27,10 @@ type OperationEnvar = Record
 -- 1. Current row number in operation, and
 -- 2. Current buffer record being built up.
 type OperationState = (Integer, Record)
+
+
+-- | 'MonadHabulara' constraint for operations.
+type Operation m = MonadHabulara OperationEnvar OperationState m
 
 
 -- | Attempts to find the value associated with the given label in the operation
@@ -109,14 +108,3 @@ select' s = askLabel s >>= liftMaybe ("Can not find record field with label: " <
 -- 'HabularaErrorOperation' is raised instead.
 use :: Operation m => T.Text -> m Value
 use s = getLabel s >>= liftMaybe ("Can not find buffer record field with label: " <> s)
-
-
--- | Performs a raw record mapping with the given list of tuples of field label
--- and field value operator.
---
--- >>> import Data.Habulara.Core.Class (runHabularaT)
--- >>> runHabularaT (HM.fromList [("a", VEmpty), ("b", VEmpty)]) (1, HM.empty) (mapRecord [("A", select "a"), ("B", select "b")]) :: IO (Either HabularaError (Record, OperationState))
--- Right (fromList [("A",VEmpty),("B",VEmpty)],(1,fromList [("A",VEmpty),("B",VEmpty)]))
-mapRecord :: Operation m => [(Label, m Value)] -> m Record
-mapRecord []                  = gets snd
-mapRecord ((name, prog) : xs) = prog >>= modifyRecord . HM.insert name >> mapRecord xs

@@ -28,6 +28,7 @@ dependencies:
 - aeson
 - bytestring
 - cassava
+- conduit
 - containers
 - iconv
 - mtl

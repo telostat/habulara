@@ -3,14 +3,14 @@
 
 module Core.Examples where
 
-import           Control.Applicative       (Alternative((<|>)))
-import           Control.Monad             ((>=>))
-import           Control.Monad.Except      (MonadError(..), MonadIO)
-import           Data.Habulara.Core.Class  (HabularaError, HabularaT, runHabularaT)
-import           Data.Habulara.Core.Mapper (Operation, mapRecord, raiseOperationError, select)
-import           Data.Habulara.Core.Types  (Label, Record, Value(VEmpty, VInt, VText))
-import qualified Data.HashMap.Strict       as HM
-import qualified Data.Text                 as T
+import           Control.Applicative          (Alternative((<|>)))
+import           Control.Monad                ((>=>))
+import           Control.Monad.Except         (MonadError(..), MonadIO)
+import           Data.Habulara.Core.Class     (HabularaError, HabularaT, runHabularaT)
+import           Data.Habulara.Core.Operation (Operation, raiseOperationError, select)
+import           Data.Habulara.Core.Types     (Label, Record, Value(VEmpty, VInt, VText))
+import qualified Data.HashMap.Strict          as HM
+import qualified Data.Text                    as T
 
 
 -- | Provides an example record for demonstration purposes.

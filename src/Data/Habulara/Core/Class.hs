@@ -20,10 +20,11 @@ import           System.IO              (hPutStrLn, stderr)
 -- introduce some complexity to 'MonadHabulara' which we may wish to avoid.
 data HabularaError =
     HabularaErrorEmpty
-  | HabularaErrorRead String
-  | HabularaErrorValueConversion String
-  | HabularaErrorSimple T.Text
+  | HabularaErrorCsv String
   | HabularaErrorOperation T.Text
+  | HabularaErrorRead String
+  | HabularaErrorSimple T.Text
+  | HabularaErrorValueConversion String
   deriving Show
 
 
@@ -64,7 +65,7 @@ instance (Monad m) => MonadPlus (HabularaT r s m) where
   mzero = throwError HabularaErrorEmpty
   m0 `mplus` m1 = m0 `catchError` const m1  -- @TODO:@ Is it lawful in the first place?
 
-instance (Monad m, MonadIO m) => (MonadHabulara r s) (HabularaT r s m) where
+instance (MonadIO m) => (MonadHabulara r s) (HabularaT r s m) where
   debug = liftIO . hPutStrLn stderr . T.unpack
 
 

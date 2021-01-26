@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e368a506ae95d4260f679f7b1408af611c885c80227e168825f04b98d5df720b
+-- hash: 2ec45aa16ef0e54ec7a84ed221cc3f530679bbca9d980c3415aba025da61883c
 
 name:           habulara
 version:        0.0.0.2
@@ -39,7 +39,10 @@ library
   exposed-modules:
       Data.Habulara
       Data.Habulara.Core.Class
-      Data.Habulara.Core.Mapper
+      Data.Habulara.Core.Conduit
+      Data.Habulara.Core.Internal.Cassava
+      Data.Habulara.Core.Mapping
+      Data.Habulara.Core.Operation
       Data.Habulara.Core.Types
       Data.Habulara.Dsl
       Data.Habulara.Internal.Commons.Convert
@@ -67,6 +70,7 @@ library
     , base >=4.7 && <5
     , bytestring
     , cassava
+    , conduit
     , containers
     , iconv
     , mtl
@@ -92,6 +96,7 @@ executable habulara
     , base >=4.7 && <5
     , bytestring
     , cassava
+    , conduit
     , containers
     , habulara
     , iconv
@@ -121,6 +126,7 @@ test-suite habulara-doctest
     , base >=4.7 && <5
     , bytestring
     , cassava
+    , conduit
     , containers
     , doctest
     , habulara
@@ -150,6 +156,7 @@ test-suite habulara-test
     , base >=4.7 && <5
     , bytestring
     , cassava
+    , conduit
     , containers
     , habulara
     , iconv
