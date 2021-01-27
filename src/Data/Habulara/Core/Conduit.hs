@@ -20,7 +20,7 @@ runMapperIntoHandle
   -> Bool
   -> BL.ByteString
   -> Handle
-  -> io (Either HabularaError ())
+  -> io (Either HabularaError ((), Integer))
 runMapperIntoHandle delim ops headerp content handle = runMapperWithSink delim ops headerp content (C.sinkHandle handle)
 
 
@@ -31,8 +31,8 @@ runMapperWithSink
   -> Bool                                                    -- ^ Indicates if we want the header in the output
   -> BL.ByteString                                           -- ^ CSV contents
   -> ConduitT B.ByteString Void (HabularaT () Integer io) () -- ^ Sink
-  -> io (Either HabularaError ())
-runMapperWithSink delim ops headerP content sink = fmap fst <$> runHabularaConduit () 0 conduit sink
+  -> io (Either HabularaError ((), Integer))
+runMapperWithSink delim ops headerP content = runHabularaConduit () 0 conduit
   where
     header = V.fromList $ fmap (TE.encodeUtf8 . fst) ops
     habularaRecordsDecode = sourceCassavaRecordsContents delim content
