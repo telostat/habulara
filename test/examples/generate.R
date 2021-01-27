@@ -13,6 +13,6 @@ generate_and_write <- function (n, path) {
 }
 
 
-for (i in 10^seq(0, 6)) {
-  generate_and_write(i, sprintf("simple_%07d.csv", i))
+for (i in 2^seq(0, 20)) {
+  generate_and_write(i, sprintf("generated_%07d.csv", i))
 }
