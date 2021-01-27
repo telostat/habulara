@@ -1,6 +1,6 @@
 module Data.Habulara.Core.Conduit where
 
-import           Control.Monad.State                 (MonadIO(..), modify)
+import           Control.Monad.State                 (MonadIO(..), modify')
 import qualified Data.ByteString                     as B
 import qualified Data.ByteString.Lazy                as BL
 import           Data.Conduit                        (ConduitT, Void, runConduit, (.|))
@@ -36,7 +36,7 @@ runMapperWithSink delim ops headerP content = runHabularaConduit () 0 conduit
   where
     header = V.fromList $ fmap (TE.encodeUtf8 . fst) ops
     habularaRecordsDecode = sourceCassavaRecordsContents delim content
-    habularaRecordsOperate = C.mapM (\x -> modify (1 +) >> mapRecord ops x)
+    habularaRecordsOperate = C.mapM (\x -> modify' (1 +) >> mapRecord ops x)
     habularaRecordsEncode = conduitEncode header headerP
     conduit = habularaRecordsDecode .| habularaRecordsOperate .| habularaRecordsEncode
 
