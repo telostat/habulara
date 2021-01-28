@@ -12,7 +12,7 @@ newtype NonEmpty a = MkNonEmpty { unpack :: a } deriving (Eq, Ord, Show)
 
 -- | 'Semigroup' instance for 'NonEmpty' type.
 --
--- >>> (fromString "a" :: (NonEmpty String)) <> (fromString "b" :: (NonEmpty String))
+-- >>> ("a" :: (NonEmpty String)) <> ("b" :: (NonEmpty String))
 -- MkNonEmpty {unpack = "ab"}
 instance (Semigroup a) => Semigroup (NonEmpty a) where
   (MkNonEmpty x) <> (MkNonEmpty y) = MkNonEmpty $ x <> y

@@ -1,44 +1,42 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
-module Data.Habulara.Core.Types where
+module Data.Habulara.Core.Value where
 
-import           Control.Monad.Except     (MonadError(throwError))
-import qualified Data.ByteString          as B
-import qualified Data.ByteString.Char8    as BC
-import qualified Data.Csv                 as Csv
-import           Data.Habulara.Core.Class (HabularaError(..))
-import qualified Data.HashMap.Strict      as HM
-import           Data.Scientific          (Scientific)
-import qualified Data.Text                as T
-import qualified Data.Text.Encoding       as TE
-import           Data.Time                (Day, LocalTime)
-import           Prelude                  hiding (null)
-import           Text.Read                (readMaybe)
-
-
--- | Habulara row record type.
---
--- A row record is a 'HM.HashMap' of keys of type 'Label' and values of type
--- 'Value'.
-type Record = HM.HashMap Label Value
-
-
--- | Habulara row record field name type (key type).
-type Label = T.Text
+import           Control.Monad.Except        (MonadError(throwError))
+import qualified Data.ByteString             as B
+import qualified Data.ByteString.Char8       as BC
+import qualified Data.Csv                    as Cassava
+import           Data.Habulara.Core.Class    (HabularaError(..))
+import qualified Data.Habulara.Core.NonEmpty as NEV
+import           Data.Scientific             (Scientific)
+import           Data.String                 (IsString(..))
+import qualified Data.Text                   as T
+import qualified Data.Text.Encoding          as TE
+import           Data.Time                   (Day, LocalTime)
+import           Text.Read                   (readMaybe)
 
 
 -- | Habulara row record field value type.
 data Value =
     VEmpty
-  | VRaw      !B.ByteString
-  | VText     !T.Text
+  | VRaw      !(NEV.NonEmpty B.ByteString)
+  | VText     !(NEV.NonEmpty T.Text)
   | VInt      !Integer
   | VDecimal  !Scientific
   | VBoolean  !Bool
   | VDate     !Day
   | VDateTime !LocalTime
   deriving (Eq, Ord, Show)
+
+
+-- | 'IsString' instance for 'Value' type.
+--
+-- >>> "" :: Value
+-- VEmpty
+-- >>> "Hebele" :: Value
+-- VRaw (MkNonEmpty {unpack = "Hebele"})
+instance IsString Value where
+  fromString = toValue . BC.pack
 
 
 -- | @cassava@ 'Csv.FromField' instance for 'Value' values.
@@ -55,50 +53,57 @@ data Value =
 -- See the underlying implementation in the 'Valuable' instance implementation
 -- 'fromByteString' for 'Value'.
 --
--- >>> import Data.Csv (parseField, runParser)
--- >>> runParser $ parseField "" :: Either String Value
+-- >>> Cassava.runParser $ Cassava.parseField "" :: Either String Value
 -- Right VEmpty
--- >>> runParser $ parseField " " :: Either String Value
--- Right (VRaw " ")
--- >>> runParser $ parseField " a " :: Either String Value
--- Right (VRaw " a ")
--- >>> runParser $ parseField " 語 " :: Either String Value
--- Right (VRaw " \158 ")
--- >>> runParser $ parseField " \t\r\n " :: Either String Value
--- Right (VRaw " \t\r\n ")
-instance Csv.FromField Value where
+-- >>> Cassava.runParser $ Cassava.parseField " " :: Either String Value
+-- Right (VRaw (MkNonEmpty {unpack = " "}))
+-- >>> Cassava.runParser $ Cassava.parseField " a " :: Either String Value
+-- Right (VRaw (MkNonEmpty {unpack = " a "}))
+-- >>> Cassava.runParser $ Cassava.parseField " 語 " :: Either String Value
+-- Right (VRaw (MkNonEmpty {unpack = " \158 "}))
+-- >>> Cassava.runParser $ Cassava.parseField " \t\r\n " :: Either String Value
+-- Right (VRaw (MkNonEmpty {unpack = " \t\r\n "}))
+instance Cassava.FromField Value where
   parseField = either (fail . show) pure . fromByteString
 
 
 -- | @cassava@ 'Csv.ToField' instance for 'Value' values.
 --
--- >>> import qualified Data.Csv
--- >>> Data.Csv.toField VEmpty
+-- >>> Cassava.toField VEmpty
 -- ""
--- >>> Data.Csv.toField $ VRaw "語"
+-- >>> Cassava.toField $ VRaw "語"
 -- "\158"
--- >>> Data.Csv.toField $ VInt 42
+-- >>> Cassava.toField $ VInt 42
 -- "42"
--- >>> Data.Csv.toField $ VText "Hello"
+-- >>> Cassava.toField $ VText "Hello"
 -- "Hello"
--- >>> Data.Csv.toField $ VDecimal (read "42")
+-- >>> Cassava.toField $ VDecimal (read "42")
 -- "42.0"
--- >>> Data.Csv.toField $ VBoolean True
+-- >>> Cassava.toField $ VBoolean True
 -- "True"
--- >>> Data.Csv.toField $ VBoolean False
+-- >>> Cassava.toField $ VBoolean False
 -- "False"
--- >>> Data.Csv.toField $ VDate (read "2021-01-01")
+-- >>> Cassava.toField $ VDate (read "2021-01-01")
 -- "2021-01-01"
--- >>> Data.Csv.toField $ VDateTime (read "2021-01-01 23:59:59")
+-- >>> Cassava.toField $ VDateTime (read "2021-01-01 23:59:59")
 -- "2021-01-01 23:59:59"
-instance Csv.ToField Value where
+instance Cassava.ToField Value where
   toField = toByteString
 
 
+-- * Valuable Definition
+--
+-- $valuable
+
+
 -- | A convenience class for the interplay between native and 'Value' types.
-class Valuable a where
-  -- | Checks if the value is null.
-  null :: a -> Bool
+class (Eq a) => Valuable a where
+  -- | Identity value.
+  identity :: a
+
+  -- | Checks if the value is identity.
+  isIdentity :: a -> Bool
+  isIdentity = (==) identity
 
   -- | Converts to the 'Value' value.
   toValue :: a -> Value
@@ -132,23 +137,22 @@ class Valuable a where
 -- >>> fromByteString "" :: Either HabularaError Value
 -- Right VEmpty
 instance Valuable Value where
-  null VEmpty = True
-  null _      = False
+  identity = VEmpty
 
   toValue = id
 
   fromValue = pure
 
   toByteString VEmpty        = B.empty
-  toByteString (VRaw i)      = i
-  toByteString (VText t)     = toByteString t
+  toByteString (VRaw i)      = NEV.unpack i
+  toByteString (VText t)     = toByteString $ NEV.unpack t
   toByteString (VInt i)      = toByteString i
   toByteString (VDecimal d)  = toByteString d
   toByteString (VBoolean b)  = toByteString b
   toByteString (VDate d)     = toByteString d
   toByteString (VDateTime t) = toByteString t
 
-  fromByteString b = pure $ if B.null b then VEmpty else VRaw b
+  fromByteString = pure . maybe VEmpty VRaw . NEV.nonEmpty
 
 
 -- | 'Valuable' instance for 'ByteString' type.
@@ -156,21 +160,15 @@ instance Valuable Value where
 -- >>> toValue ("" :: B.ByteString)
 -- VEmpty
 -- >>> toValue (" " :: B.ByteString)
--- VRaw " "
+-- VRaw (MkNonEmpty {unpack = " "})
 -- >>> toValue ("語" :: B.ByteString)
--- VRaw "\158"
+-- VRaw (MkNonEmpty {unpack = "\158"})
 -- >>> fromValue VEmpty :: Either HabularaError B.ByteString
--- Right ""
--- >>> fromValue (VRaw "") :: Either HabularaError B.ByteString
 -- Right ""
 -- >>> fromValue (VRaw " ") :: Either HabularaError B.ByteString
 -- Right " "
--- >>> fromValue (VText "") :: Either HabularaError B.ByteString
--- Left (HabularaErrorValueConversion "Can not convert to Integer: VText \"\"")
 -- >>> fromValue (VText " ") :: Either HabularaError B.ByteString
--- Left (HabularaErrorValueConversion "Can not convert to Integer: VText \" \"")
--- >>> toByteString (VRaw "")
--- ""
+-- Left (HabularaErrorValueConversion "Can not convert to Integer: VText (MkNonEmpty {unpack = \" \"})")
 -- >>> toByteString (VRaw " ")
 -- " "
 -- >>> fromByteString "" :: Either HabularaError B.ByteString
@@ -178,13 +176,13 @@ instance Valuable Value where
 -- >>> fromByteString " " :: Either HabularaError B.ByteString
 -- Right " "
 instance Valuable B.ByteString where
-  null = B.null
+  identity = ""
 
-  toValue x = if null x then VEmpty else VRaw x
+  toValue = maybe VEmpty VRaw . NEV.nonEmpty
 
   -- TODO: Attempt to convert from other 'Value' values, too.
   fromValue VEmpty   = pure ""
-  fromValue (VRaw b) = pure b
+  fromValue (VRaw b) = pure $ NEV.unpack b
   fromValue v        = raiseConversionError "Integer" v
 
   toByteString = id
@@ -197,15 +195,11 @@ instance Valuable B.ByteString where
 -- >>> toValue ("" :: T.Text)
 -- VEmpty
 -- >>> toValue (" " :: T.Text)
--- VText " "
+-- VText (MkNonEmpty {unpack = " "})
 -- >>> fromValue VEmpty :: Either HabularaError T.Text
--- Right ""
--- >>> fromValue (VText "") :: Either HabularaError T.Text
 -- Right ""
 -- >>> fromValue (VText " ") :: Either HabularaError T.Text
 -- Right " "
--- >>> toByteString (VText "")
--- ""
 -- >>> toByteString (VText " ")
 -- " "
 -- >>> toByteString (VText "語")
@@ -217,13 +211,13 @@ instance Valuable B.ByteString where
 -- >>> fromByteString "\232\170\158" :: Either HabularaError T.Text
 -- Right "\35486"
 instance Valuable T.Text where
-  null = T.null
+  identity = ""
 
-  toValue x = if null x then VEmpty else VText x
+  toValue = maybe VEmpty VText . NEV.nonEmpty
 
   -- TODO: Attempt to convert from other 'Value' values, too.
   fromValue VEmpty    = pure ""
-  fromValue (VText x) = pure x
+  fromValue (VText x) = pure $ NEV.unpack x
   fromValue v         = raiseConversionError "Text" v
 
   toByteString = TE.encodeUtf8
@@ -247,7 +241,7 @@ instance Valuable T.Text where
 -- >>> fromByteString "42a" :: Either HabularaError Integer
 -- Left (HabularaErrorRead "Can not read Integer from: 42a")
 instance Valuable Integer where
-  null _ = False
+  identity = 0
 
   toValue = VInt
 
@@ -275,7 +269,7 @@ instance Valuable Integer where
 -- >>> fromByteString "42" :: Either HabularaError Scientific
 -- Right 42.0
 instance Valuable Scientific where
-  null _ = False
+  identity = 0
 
   toValue = VDecimal
 
@@ -312,7 +306,7 @@ instance Valuable Scientific where
 -- >>> fromByteString "False" :: Either HabularaError Bool
 -- Right False
 instance Valuable Bool where
-  null _ = False
+  identity = False
 
   toValue = VBoolean
 
@@ -342,7 +336,7 @@ instance Valuable Bool where
 -- >>> fromByteString "2020-12-31" :: Either HabularaError Day
 -- Right 2020-12-31
 instance Valuable Day where
-  null _ = False
+  identity = read "0000-00-00"
 
   toValue = VDate
 
@@ -371,7 +365,7 @@ instance Valuable Day where
 -- >>> fromByteString "2020-12-31 23:59:59" :: Either HabularaError LocalTime
 -- Right 2020-12-31 23:59:59
 instance Valuable LocalTime where
-  null _ = False
+  identity = read "0000-00-00 00:00:00"
 
   toValue = VDateTime
 

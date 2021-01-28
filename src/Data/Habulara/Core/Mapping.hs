@@ -9,7 +9,8 @@ import           Control.Monad.Except         (MonadError(throwError))
 import           Control.Monad.State          (MonadIO(..), gets)
 import           Data.Habulara.Core.Class     (HabularaT, MonadHabulara, runHabularaT)
 import           Data.Habulara.Core.Operation (Operation, OperationEnvar, OperationState, modifyRecord)
-import           Data.Habulara.Core.Types     (Label, Record, Value)
+import           Data.Habulara.Core.Record    (Label, Record)
+import           Data.Habulara.Core.Value     (Value)
 import qualified Data.HashMap.Strict          as HM
 
 
