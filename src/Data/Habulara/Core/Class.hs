@@ -101,3 +101,12 @@ runHabularaIO
   -> HabularaT r s IO a
   -> IO (Either HabularaError (a, s))
 runHabularaIO = runHabularaT
+
+
+-- | Run a 'HabularaT' execution ('runHabularaT') in 'IO' monad with unit
+-- environment and state variables for convenience purposes such as doctests
+-- without being forced to give type hints.
+runHabularaInVoid
+  :: HabularaT () () IO a
+  -> IO (Either HabularaError (a, ()))
+runHabularaInVoid = runHabularaIO () ()
