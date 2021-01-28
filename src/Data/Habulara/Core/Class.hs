@@ -91,3 +91,13 @@ runHabularaT
   -> HabularaT r s m a
   -> m (Either HabularaError (a, s))
 runHabularaT env state program = runExceptT (runStateT (runReaderT (unHabularaT program) env) state)
+
+
+-- | Re-declaration of 'HabularaT' execution ('runHabularaT') in 'IO' monad for convenience
+-- purposes such as doctests without being forced to give type hints.
+runHabularaIO
+  :: r
+  -> s
+  -> HabularaT r s IO a
+  -> IO (Either HabularaError (a, s))
+runHabularaIO = runHabularaT
