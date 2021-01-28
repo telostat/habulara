@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Data.Habulara.Core.Internal.Cassava where
 
