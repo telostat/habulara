@@ -1,18 +1,29 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Data.Habulara.Core.Value where
 
+import           Control.Monad               ((>=>))
 import           Control.Monad.Except        (MonadError(throwError))
 import qualified Data.ByteString             as B
 import qualified Data.ByteString.Char8       as BC
 import qualified Data.Csv                    as Cassava
-import           Data.Habulara.Core.Class    (HabularaError(..))
+import           Data.Habulara.Core.Class    (HabularaError(..), liftMaybe)
 import qualified Data.Habulara.Core.NonEmpty as NEV
 import           Data.Scientific             (Scientific)
 import           Data.String                 (IsString(..))
 import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as TE
-import           Data.Time                   (Day, LocalTime)
+import           Data.Time
+                 ( Day(..)
+                 , LocalTime(..)
+                 , NominalDiffTime
+                 , TimeOfDay(..)
+                 , addLocalTime
+                 , diffLocalTime
+                 , fromGregorian
+                 , secondsToNominalDiffTime
+                 )
 import           Text.Read                   (readMaybe)
 
 
@@ -155,7 +166,65 @@ instance Valuable Value where
   fromByteString = pure . maybe VEmpty VRaw . NEV.nonEmpty
 
 
--- | 'Valuable' instance for 'ByteString' type.
+-- | 'Valuable' instance for @'NonEmpty' 'B.ByteString'@ type.
+--
+-- >>> toValue (" " :: NEV.NonEmpty B.ByteString)
+-- VRaw (MkNonEmpty {unpack = " "})
+-- >>> fromValue VEmpty :: Either HabularaError (NEV.NonEmpty T.Text)
+-- Left (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value")
+-- >>> fromValue (" " :: Value) :: Either HabularaError (NEV.NonEmpty B.ByteString)
+-- Right (MkNonEmpty {unpack = " "})
+-- >>> fromValue (VInt 1) :: Either HabularaError (NEV.NonEmpty B.ByteString)
+-- Right (MkNonEmpty {unpack = "1"})
+-- >>> toByteString (" " :: NEV.NonEmpty B.ByteString)
+-- " "
+-- >>> fromByteString " " :: Either HabularaError (NEV.NonEmpty B.ByteString)
+-- Right (MkNonEmpty {unpack = " "})
+-- >>> fromByteString "" :: Either HabularaError (NEV.NonEmpty B.ByteString)
+-- Left (HabularaErrorValueConversion "Can not create 'NonEmpty ByteString' with empty value")
+instance Valuable (NEV.NonEmpty B.ByteString) where
+  identity = error "NonEmpty ByteString does not have identity value"
+
+  toValue = VRaw
+
+  fromValue = fromByteString . toByteString
+
+  toByteString = NEV.unpack
+
+  fromByteString = liftMaybe (HabularaErrorValueConversion "Can not create 'NonEmpty ByteString' with empty value") . NEV.nonEmpty
+
+
+-- | 'Valuable' instance for @'NonEmpty' 'T.Text'@ type.
+--
+-- >>> toValue (" " :: NEV.NonEmpty T.Text)
+-- VText (MkNonEmpty {unpack = " "})
+-- >>> fromValue VEmpty :: Either HabularaError (NEV.NonEmpty T.Text)
+-- Left (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value")
+-- >>> fromValue (" " :: Value) :: Either HabularaError (NEV.NonEmpty T.Text)
+-- Right (MkNonEmpty {unpack = " "})
+-- >>> fromValue (VInt 1) :: Either HabularaError (NEV.NonEmpty T.Text)
+-- Right (MkNonEmpty {unpack = "1"})
+-- >>> toByteString (" " :: NEV.NonEmpty T.Text)
+-- " "
+-- >>> fromByteString "" :: Either HabularaError (NEV.NonEmpty T.Text)
+-- Left (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value")
+-- >>> fromByteString " " :: Either HabularaError (NEV.NonEmpty T.Text)
+-- Right (MkNonEmpty {unpack = " "})
+instance Valuable (NEV.NonEmpty T.Text) where
+  identity = error "NonEmpty Text does not have identity value"
+
+  toValue = VText
+
+  fromValue VEmpty    = throwError $ HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value"
+  fromValue (VText t) = pure t
+  fromValue v         = fromByteString . toByteString $ v
+
+  toByteString = toByteString . NEV.unpack
+
+  fromByteString = fromByteString >=> liftMaybe (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value") . NEV.nonEmpty
+
+
+-- | 'Valuable' instance for 'B.ByteString' type.
 --
 -- >>> toValue ("" :: B.ByteString)
 -- VEmpty
@@ -168,7 +237,7 @@ instance Valuable Value where
 -- >>> fromValue (VRaw " ") :: Either HabularaError B.ByteString
 -- Right " "
 -- >>> fromValue (VText " ") :: Either HabularaError B.ByteString
--- Left (HabularaErrorValueConversion "Can not convert to Integer: VText (MkNonEmpty {unpack = \" \"})")
+-- Right " "
 -- >>> toByteString (VRaw " ")
 -- " "
 -- >>> fromByteString "" :: Either HabularaError B.ByteString
@@ -180,10 +249,7 @@ instance Valuable B.ByteString where
 
   toValue = maybe VEmpty VRaw . NEV.nonEmpty
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
-  fromValue VEmpty   = pure ""
-  fromValue (VRaw b) = pure $ NEV.unpack b
-  fromValue v        = raiseConversionError "Integer" v
+  fromValue = fromByteString . toByteString
 
   toByteString = id
 
@@ -215,10 +281,9 @@ instance Valuable T.Text where
 
   toValue = maybe VEmpty VText . NEV.nonEmpty
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
   fromValue VEmpty    = pure ""
-  fromValue (VText x) = pure $ NEV.unpack x
-  fromValue v         = raiseConversionError "Text" v
+  fromValue (VText t) = pure . NEV.unpack $ t
+  fromValue v         = fromByteString . toByteString $ v
 
   toByteString = TE.encodeUtf8
 
@@ -230,10 +295,28 @@ instance Valuable T.Text where
 --
 -- >>> toValue (42 :: Integer)
 -- VInt 42
+-- >>> fromValue VEmpty :: Either HabularaError Integer
+-- Right 0
+-- >>> fromValue (VRaw "1") :: Either HabularaError Integer
+-- Right 1
+-- >>> fromValue (VRaw "1a") :: Either HabularaError Integer
+-- Left (HabularaErrorRead "Can not read Integer from: 1a")
+-- >>> fromValue (VText "1") :: Either HabularaError Integer
+-- Right 1
+-- >>> fromValue (VText "1a") :: Either HabularaError Integer
+-- Left (HabularaErrorRead "Can not read Integer from: 1a")
 -- >>> fromValue (VInt 42) :: Either HabularaError Integer
 -- Right 42
 -- >>> fromValue (VDecimal 42) :: Either HabularaError Integer
--- Left (HabularaErrorValueConversion "Can not convert to Integer: VDecimal 42.0")
+-- Right 42
+-- >>> fromValue (VBoolean False) :: Either HabularaError Integer
+-- Right 0
+-- >>> fromValue (VBoolean True) :: Either HabularaError Integer
+-- Right 1
+-- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Integer
+-- Right 59214
+-- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59") :: Either HabularaError Integer
+-- Right 1609459199
 -- >>> toByteString (VInt 42)
 -- "42"
 -- >>> fromByteString "42" :: Either HabularaError Integer
@@ -245,42 +328,71 @@ instance Valuable Integer where
 
   toValue = VInt
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
-  fromValue (VInt x) = pure x
-  fromValue v        = raiseConversionError "Integer" v
+  fromValue VEmpty           = pure identity
+  fromValue (VInt x)         = pure x
+  fromValue (VDecimal x)     = pure . floor $ x
+  fromValue (VBoolean False) = pure 0
+  fromValue (VBoolean True)  = pure 1
+  fromValue (VDate x)        = pure . toModifiedJulianDay $ x
+  fromValue (VDateTime x)    = pure . floor . toRational . epoch $ x
+  fromValue v                = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show
+  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
-  fromByteString b = case BC.readInteger b of
+  fromByteString b = case BC.readInteger b of  -- TODO: Any faster way of doing this?
     Nothing     -> raiseReadError "Integer" b
     Just (x, r) -> if B.null r then pure x else raiseReadError "Integer" b
 
 
 -- | 'Valuable' instance for 'Scientific' type.
 --
--- >>> toValue (read "42" :: Scientific)
+-- >>> toValue (42 :: Scientific)
 -- VDecimal 42.0
 -- >>> fromValue VEmpty :: Either HabularaError Scientific
--- Left (HabularaErrorValueConversion "Can not convert to Scientific: VEmpty")
--- >>> fromValue (VDecimal $ read "42") :: Either HabularaError Scientific
+-- Right 0.0
+-- >>> fromValue (VRaw "1") :: Either HabularaError Scientific
+-- Right 1.0
+-- >>> fromValue (VRaw "1a") :: Either HabularaError Scientific
+-- Left (HabularaErrorRead "Can not read Scientific from: 1a")
+-- >>> fromValue (VText "1") :: Either HabularaError Scientific
+-- Right 1.0
+-- >>> fromValue (VText "1a") :: Either HabularaError Scientific
+-- Left (HabularaErrorRead "Can not read Scientific from: 1a")
+-- >>> fromValue (VInt 42) :: Either HabularaError Scientific
 -- Right 42.0
--- >>> toByteString (VDecimal $ read "42")
+-- >>> fromValue (VDecimal 42) :: Either HabularaError Scientific
+-- Right 42.0
+-- >>> fromValue (VBoolean False) :: Either HabularaError Scientific
+-- Right 0.0
+-- >>> fromValue (VBoolean True) :: Either HabularaError Scientific
+-- Right 1.0
+-- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Scientific
+-- Right 59214.0
+-- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError Scientific
+-- Right 1.609459199001e9
+-- >>> toByteString (VDecimal 42)
 -- "42.0"
 -- >>> fromByteString "42" :: Either HabularaError Scientific
 -- Right 42.0
+-- >>> fromByteString "42a" :: Either HabularaError Scientific
+-- Left (HabularaErrorRead "Can not read Scientific from: 42a")
 instance Valuable Scientific where
   identity = 0
 
   toValue = VDecimal
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
-  fromValue (VDecimal x) = pure x
-  fromValue v            = raiseConversionError "Scientific" v
+  fromValue VEmpty           = pure identity
+  fromValue (VInt x)         = pure . fromIntegral $ x
+  fromValue (VDecimal x)     = pure x
+  fromValue (VBoolean False) = pure 0
+  fromValue (VBoolean True)  = pure 1
+  fromValue (VDate x)        = pure . fromIntegral . toModifiedJulianDay $ x
+  fromValue (VDateTime x)    = pure . realToFrac $ epoch x
+  fromValue v                = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show
+  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
-  -- TODO: Find a more efficient method for this conversion.
-  fromByteString b = case readMaybe $ BC.unpack b of
+  fromByteString b = case readMaybe $ BC.unpack b of -- TODO: Any faster way of doing this?
     Nothing -> raiseReadError "Scientific" b
     Just x  -> pure x
 
@@ -292,11 +404,43 @@ instance Valuable Scientific where
 -- >>> toValue False
 -- VBoolean False
 -- >>> fromValue VEmpty :: Either HabularaError Bool
--- Left (HabularaErrorValueConversion "Can not convert to Boolean: VEmpty")
--- >>> fromValue (VBoolean True) :: Either HabularaError Bool
+-- Right False
+-- >>> fromValue (VRaw "0") :: Either HabularaError Bool
+-- Left (HabularaErrorRead "Can not read Boolean from: 0")
+-- >>> fromValue (VRaw "1") :: Either HabularaError Bool
+-- Left (HabularaErrorRead "Can not read Boolean from: 1")
+-- >>> fromValue (VRaw "True") :: Either HabularaError Bool
+-- Right True
+-- >>> fromValue (VRaw "False") :: Either HabularaError Bool
+-- Right False
+-- >>> fromValue (VText "0") :: Either HabularaError Bool
+-- Left (HabularaErrorRead "Can not read Boolean from: 0")
+-- >>> fromValue (VText "1") :: Either HabularaError Bool
+-- Left (HabularaErrorRead "Can not read Boolean from: 1")
+-- >>> fromValue (VText "True") :: Either HabularaError Bool
+-- Right True
+-- >>> fromValue (VText "False") :: Either HabularaError Bool
+-- Right False
+-- >>> fromValue (VInt 0) :: Either HabularaError Bool
+-- Right False
+-- >>> fromValue (VInt 1) :: Either HabularaError Bool
+-- Right True
+-- >>> fromValue (VInt 42) :: Either HabularaError Bool
+-- Right True
+-- >>> fromValue (VDecimal 0) :: Either HabularaError Bool
+-- Right False
+-- >>> fromValue (VDecimal 1) :: Either HabularaError Bool
+-- Right True
+-- >>> fromValue (VDecimal 42) :: Either HabularaError Bool
 -- Right True
 -- >>> fromValue (VBoolean False) :: Either HabularaError Bool
 -- Right False
+-- >>> fromValue (VBoolean True) :: Either HabularaError Bool
+-- Right True
+-- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Bool
+-- Left (HabularaErrorValueConversion "Can not convert to Boolean: VDate 2020-12-31")
+-- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError Bool
+-- Left (HabularaErrorValueConversion "Can not convert to Boolean: VDateTime 2020-12-31 23:59:59.001")
 -- >>> toByteString (VBoolean True)
 -- "True"
 -- >>> toByteString (VBoolean False)
@@ -310,10 +454,13 @@ instance Valuable Bool where
 
   toValue = VBoolean
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
-  fromValue (VBoolean True)  = pure True
-  fromValue (VBoolean False) = pure False
-  fromValue v                = raiseConversionError "Boolean" v
+  fromValue VEmpty          = pure identity
+  fromValue (VInt x)        = pure $ x /= 0
+  fromValue (VDecimal x)    = pure $ x /= 0
+  fromValue (VBoolean x)    = pure x
+  fromValue x@(VDate _)     = raiseConversionError "Boolean" x
+  fromValue x@(VDateTime _) = raiseConversionError "Boolean" x
+  fromValue v               = fromByteString . toByteString $ v
 
   toByteString True  = "True"
   toByteString False = "False"
@@ -328,26 +475,55 @@ instance Valuable Bool where
 -- >>> toValue (read "2020-12-31" :: Day)
 -- VDate 2020-12-31
 -- >>> fromValue VEmpty :: Either HabularaError Day
--- Left (HabularaErrorValueConversion "Can not convert to Day: VEmpty")
+-- Right 1858-11-17
+-- >>> fromValue (VRaw " ") :: Either HabularaError Day
+-- Left (HabularaErrorRead "Can not read Date from:  ")
+-- >>> fromValue (VRaw "2020-12-31") :: Either HabularaError Day
+-- Right 2020-12-31
+-- >>> fromValue (VText " ") :: Either HabularaError Day
+-- Left (HabularaErrorRead "Can not read Date from:  ")
+-- >>> fromValue (VText "2020-12-31") :: Either HabularaError Day
+-- Right 2020-12-31
+-- >>> fromValue (VInt 0) :: Either HabularaError Day
+-- Right 1858-11-17
+-- >>> fromValue (VInt 1) :: Either HabularaError Day
+-- Right 1858-11-18
+-- >>> fromValue (VInt 42) :: Either HabularaError Day
+-- Right 1858-12-29
+-- >>> fromValue (VDecimal 0) :: Either HabularaError Day
+-- Right 1858-11-17
+-- >>> fromValue (VDecimal 1) :: Either HabularaError Day
+-- Right 1858-11-18
+-- >>> fromValue (VDecimal 42) :: Either HabularaError Day
+-- Right 1858-12-29
+-- >>> fromValue (VBoolean False) :: Either HabularaError Day
+-- Left (HabularaErrorValueConversion "Can not convert to Date: VBoolean False")
+-- >>> fromValue (VBoolean True) :: Either HabularaError Day
+-- Left (HabularaErrorValueConversion "Can not convert to Date: VBoolean True")
 -- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Day
+-- Right 2020-12-31
+-- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError Day
 -- Right 2020-12-31
 -- >>> toByteString (VDate $ read "2020-12-31")
 -- "2020-12-31"
 -- >>> fromByteString "2020-12-31" :: Either HabularaError Day
 -- Right 2020-12-31
 instance Valuable Day where
-  identity = read "0000-00-00"
+  identity = ModifiedJulianDay 0
 
   toValue = VDate
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
-  fromValue (VDate x) = pure x
-  fromValue v         = raiseConversionError "Day" v
+  fromValue VEmpty         = pure identity
+  fromValue (VInt x)       = pure . ModifiedJulianDay $ x
+  fromValue (VDecimal x)   = pure . ModifiedJulianDay . floor $ x
+  fromValue x@(VBoolean _) = raiseConversionError "Date" x
+  fromValue (VDate x)      = pure x
+  fromValue (VDateTime x)  = pure . localDay $ x
+  fromValue v              = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show
+  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
-  -- TODO: Find a more efficient method for this conversion.
-  fromByteString b = case readMaybe $ BC.unpack b of
+  fromByteString b = case readMaybe $ BC.unpack b of  -- TODO: Any faster way of doing this?
     Nothing -> raiseReadError "Date" b
     Just x  -> pure x
 
@@ -357,25 +533,103 @@ instance Valuable Day where
 -- >>> toValue (read "2020-12-31 23:59:59" :: LocalTime)
 -- VDateTime 2020-12-31 23:59:59
 -- >>> fromValue VEmpty :: Either HabularaError LocalTime
--- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VEmpty")
--- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59") :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:00
+-- >>> fromValue (VRaw " ") :: Either HabularaError LocalTime
+-- Left (HabularaErrorRead "Can not read LocalTime from:  ")
+-- >>> fromValue (VRaw "2020-12-31 23:59:59") :: Either HabularaError LocalTime
 -- Right 2020-12-31 23:59:59
+-- >>> fromValue (VRaw "2020-12-31 23:59:59.000001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.000001
+-- >>> fromValue (VRaw "2020-12-31 23:59:59.000000001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.000000001
+-- >>> fromValue (VRaw "2020-12-31 23:59:59.000000000001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.000000000001
+-- >>> fromValue (VRaw "2020-12-31 23:59:59.0000000000009") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59
+-- >>> fromValue (VText "2020-12-31 23:59:59") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59
+-- >>> fromValue (VText "2020-12-31 23:59:59.000001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.000001
+-- >>> fromValue (VText "2020-12-31 23:59:59.000000001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.000000001
+-- >>> fromValue (VText "2020-12-31 23:59:59.000000000001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.000000000001
+-- >>> fromValue (VText "2020-12-31 23:59:59.0000000000009") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59
+-- >>> fromValue (VInt 0) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:00
+-- >>> fromValue (VInt 1) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:01
+-- >>> fromValue (VInt 42) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42
+-- >>> fromValue (VDecimal 0) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:00
+-- >>> fromValue (VDecimal 1) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:01
+-- >>> fromValue (VDecimal 42) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42
+-- >>> fromValue (VDecimal 42.001) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42.001
+-- >>> fromValue (VDecimal 42.000001) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42.000001
+-- >>> fromValue (VDecimal 42.000000001) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42.000000001
+-- >>> fromValue (VDecimal 42.000000000001) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42.000000000001
+-- >>> fromValue (VDecimal 42.0000000000009) :: Either HabularaError LocalTime
+-- Right 1970-01-01 00:00:42
+-- >>> fromValue (VBoolean False) :: Either HabularaError LocalTime
+-- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBoolean False")
+-- >>> fromValue (VBoolean True) :: Either HabularaError LocalTime
+-- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBoolean True")
+-- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError LocalTime
+-- Right 2020-12-31 00:00:00
+-- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError LocalTime
+-- Right 2020-12-31 23:59:59.001
 -- >>> toByteString (VDateTime $ read "2020-12-31 23:59:59")
 -- "2020-12-31 23:59:59"
 -- >>> fromByteString "2020-12-31 23:59:59" :: Either HabularaError LocalTime
 -- Right 2020-12-31 23:59:59
 instance Valuable LocalTime where
-  identity = read "0000-00-00 00:00:00"
+  identity = epochStart
 
   toValue = VDateTime
 
-  -- TODO: Attempt to convert from other 'Value' values, too.
-  fromValue (VDateTime x) = pure x
-  fromValue v             = raiseConversionError "LocalTime" v
+  fromValue VEmpty         = pure identity
+  fromValue (VInt x)       = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromInteger $ x
+  fromValue (VDecimal x)   = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
+  fromValue x@(VBoolean _) = raiseConversionError "LocalTime" x
+  fromValue (VDate x)      = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
+  fromValue (VDateTime x)  = pure x
+  fromValue v              = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show
+  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
-  -- TODO: Find a more efficient method for this conversion.
-  fromByteString b = case readMaybe $ BC.unpack b of
-    Nothing -> raiseReadError "Date" b
+  fromByteString b = case readMaybe $ BC.unpack b of  -- TODO: Any faster way of doing this?
+    Nothing -> raiseReadError "LocalTime" b
     Just x  -> pure x
+
+
+-- * Auxiliaries
+--
+-- $auxiliaries
+
+
+-- | Local time corresponding to UNIX epoch start time.
+--
+-- >>> epochStart
+-- 1970-01-01 00:00:00
+epochStart :: LocalTime
+epochStart = LocalTime (fromGregorian 1970 1 1) (TimeOfDay 0 0 0)
+
+
+-- | Computes epoch time as 'NominalDiffTime'.
+--
+-- >>> epoch epochStart
+-- 0s
+-- >>> epoch (read "2020-12-31 23:59:59")
+-- 1609459199s
+-- >>> epoch (read "2020-12-31 23:59:59.999999999999")
+-- 1609459199.999999999999s
+epoch :: LocalTime -> NominalDiffTime
+epoch = flip diffLocalTime epochStart
