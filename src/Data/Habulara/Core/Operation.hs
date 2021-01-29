@@ -1,3 +1,14 @@
+-- | This module provides primitives and pre-defined convenience functions used
+-- to build Habulara 'Record's from raw 'Record's.
+--
+-- As a quick start:
+--
+-- >>> import Data.Habulara.Core.Class (runHabularaIO)
+-- >>> runHabularaIO (HM.fromList [("a", "1")]) (1, HM.empty :: Record) (select "a" >>= asEmpty)
+-- Right (VEmpty,(1,fromList []))
+-- >>> runHabularaIO (HM.fromList [("a", "1")] :: Record) (1, HM.fromList [("b", "1")]) (peek "b" >>= asEmpty)
+-- Right (VEmpty,(1,fromList [("b",VRaw (MkNonEmpty {unpack = "1"}))]))
+
 {-# LANGUAGE ConstraintKinds  #-}
 {-# LANGUAGE FlexibleContexts #-}
 
@@ -15,6 +26,7 @@ import qualified Data.HashMap.Strict       as HM
 import           Data.Scientific           (Scientific)
 import qualified Data.Text                 as T
 import           Data.Time                 (Day, LocalTime)
+import           Prelude                   hiding (lookup)
 
 -- * Types
 --
@@ -52,10 +64,10 @@ type Operation m = MonadHabulara OperationEnvar OperationState m
 
 -- ** Field Accessors
 --
--- $operationsFieldAccessors
---
 -- These operations are essential in that they allow accessing raw record or
 -- buffer record field values.
+--
+-- $operationsFieldAccessors
 
 
 -- | Attempts to retrieve the field 'Value' for the given field label from the
@@ -64,36 +76,42 @@ type Operation m = MonadHabulara OperationEnvar OperationState m
 -- If the label does not exist in the record, 'VEmpty' is returned.
 --
 -- >>> import Data.Habulara.Core.Class (runHabularaIO)
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "a")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "a")
 -- Right (VEmpty,(1,fromList []))
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "b")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "b")
 -- Right (VEmpty,(1,fromList []))
-select :: Operation m => T.Text -> m Value
-select s = select' s <|> pure VEmpty
+lookup :: (MonadReader OperationEnvar m, MonadError HabularaError m, Alternative m) => T.Text -> m Value
+lookup s = select s <|> pure VEmpty
 
 
 -- | Attempts to retrieve the field 'Value' for the given field label from the
 -- raw record.
 --
--- Similar to 'select' but if the label does not exist in the record,
+-- Similar to 'lookup' but if the label does not exist in the record,
 -- 'HabularaErrorOperation' is raised instead.
 --
 -- >>> import Data.Habulara.Core.Class (runHabularaIO)
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select' "a")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "a")
 -- Right (VEmpty,(1,fromList []))
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select' "b")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "b")
 -- Left (HabularaErrorOperation "Can not find record field with label: b")
-select' :: Operation m => T.Text -> m Value
-select' s = askLabel s >>= liftMaybe ("Can not find record field with label: " <> s)
+select :: (MonadReader OperationEnvar m, MonadError HabularaError m) => T.Text -> m Value
+select s = askLabel s >>= liftMaybe ("Can not find record field with label: " <> s)
 
 
 -- | Attempts to retrieve the field 'Value' for the given field label from the
--- state buffer record.
+-- state buffer record (record that is currently built up).
 --
 -- If the label does not exist in the state buffer record,
 -- 'HabularaErrorOperation' is raised instead.
-use :: Operation m => T.Text -> m Value
-use s = getLabel s >>= liftMaybe ("Can not find buffer record field with label: " <> s)
+--
+-- >>> import Data.Habulara.Core.Class (runHabularaIO)
+-- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "a")
+-- Right (VRaw (MkNonEmpty {unpack = "A"}),(1,fromList [("a",VRaw (MkNonEmpty {unpack = "A"}))]))
+-- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "b")
+-- Left (HabularaErrorOperation "Can not find buffer record field with label: b")
+peek :: (MonadState OperationState m, MonadError HabularaError m) => T.Text -> m Value
+peek s = getLabel s >>= liftMaybe ("Can not find buffer record field with label: " <> s)
 
 
 -- ** Value Constructors
