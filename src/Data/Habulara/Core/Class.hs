@@ -6,10 +6,10 @@
 module Data.Habulara.Core.Class where
 
 import           Control.Applicative    (Alternative(empty, (<|>)))
-import           Control.Monad.Except   (ExceptT, MonadError(catchError, throwError), MonadPlus(..), runExceptT)
+import           Control.Monad.Except   (ExceptT, MonadError(..), MonadPlus(..), runExceptT)
 import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Control.Monad.Reader   (MonadReader, ReaderT(ReaderT, runReaderT))
-import           Control.Monad.State    (MonadState, StateT(runStateT))
+import           Control.Monad.Reader   (MonadReader, ReaderT(..))
+import           Control.Monad.State    (MonadState, StateT(..))
 import qualified Data.Text              as T
 import           System.IO              (hPutStrLn, stderr)
 
@@ -110,3 +110,13 @@ runHabularaInVoid
   :: HabularaT () () IO a
   -> IO (Either HabularaError (a, ()))
 runHabularaInVoid = runHabularaIO () ()
+
+
+-- * Helpers
+--
+-- $helpers
+
+
+-- | Lifts a 'Maybe' into @'MonadError' 'HabularaError' m@ context with a default 'HabularaError'
+liftMaybe :: MonadError HabularaError m => HabularaError -> Maybe a -> m a
+liftMaybe err = maybe (throwError err) pure

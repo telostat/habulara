@@ -19,7 +19,7 @@ import           Control.Monad.Except      (MonadError(throwError))
 import           Control.Monad.Reader      (MonadReader, asks)
 import           Control.Monad.State       (MonadState(get, put), gets)
 import qualified Data.ByteString           as B
-import           Data.Habulara.Core.Class  (HabularaError(..), MonadHabulara)
+import           Data.Habulara.Core.Class  (HabularaError(..), MonadHabulara, liftMaybe)
 import           Data.Habulara.Core.Record (Label, Record)
 import           Data.Habulara.Core.Value  (Valuable(..), Value(..))
 import qualified Data.HashMap.Strict       as HM
@@ -96,7 +96,7 @@ lookup s = select s <|> pure VEmpty
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "b")
 -- Left (HabularaErrorOperation "Can not find record field with label: b")
 select :: (MonadReader OperationEnvar m, MonadError HabularaError m) => T.Text -> m Value
-select s = askLabel s >>= liftMaybe ("Can not find record field with label: " <> s)
+select s = askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find record field with label: " <> s)
 
 
 -- | Attempts to retrieve the field 'Value' for the given field label from the
@@ -111,7 +111,7 @@ select s = askLabel s >>= liftMaybe ("Can not find record field with label: " <>
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "b")
 -- Left (HabularaErrorOperation "Can not find buffer record field with label: b")
 peek :: (MonadState OperationState m, MonadError HabularaError m) => T.Text -> m Value
-peek s = getLabel s >>= liftMaybe ("Can not find buffer record field with label: " <> s)
+peek s = getLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find buffer record field with label: " <> s)
 
 
 -- ** Value Constructors
@@ -411,11 +411,6 @@ getLabel l = getsLabel l id
 -- | Modifies the operation state buffer record.
 modifyRecord :: MonadState OperationState m => (Record -> Record) -> m ()
 modifyRecord f = get >>= (\(c, r) -> put (c, f r))
-
-
--- | Lifts a 'Maybe' into operation context with a default error message.
-liftMaybe :: MonadError HabularaError m => T.Text -> Maybe Value -> m Value
-liftMaybe err = maybe (raiseOperationError err) pure
 
 
 -- | Convenience function for throwing operation errors.
