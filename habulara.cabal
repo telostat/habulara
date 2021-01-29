@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2ec45aa16ef0e54ec7a84ed221cc3f530679bbca9d980c3415aba025da61883c
+-- hash: cd0fa3624739e29e6ef4de1713cd878ed0d3ad5011f6b06048d46f7d26fc526d
 
 name:           habulara
 version:        0.0.0.2
@@ -22,9 +22,6 @@ build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
-    test/examples/generate.R
-    test/examples/simple.csv
-    test/examples/simple.yaml
 
 source-repository head
   type: git
@@ -38,12 +35,15 @@ flag static
 library
   exposed-modules:
       Data.Habulara
+      Data.Habulara.Core
       Data.Habulara.Core.Class
       Data.Habulara.Core.Conduit
       Data.Habulara.Core.Internal.Cassava
       Data.Habulara.Core.Mapping
+      Data.Habulara.Core.NonEmpty
       Data.Habulara.Core.Operation
-      Data.Habulara.Core.Types
+      Data.Habulara.Core.Record
+      Data.Habulara.Core.Value
       Data.Habulara.Dsl
       Data.Habulara.Internal.Commons.Convert
       Data.Habulara.Internal.Commons.Csv
@@ -64,6 +64,7 @@ library
       Paths_habulara
   hs-source-dirs:
       src
+  default-extensions: OverloadedStrings
   ghc-options: -Wall
   build-depends:
       aeson
@@ -146,13 +147,15 @@ test-suite habulara-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Core.Examples
+      Instances
+      Laws
       Paths_habulara
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
+      QuickCheck
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , cassava
@@ -162,6 +165,7 @@ test-suite habulara-test
     , iconv
     , mtl
     , profunctors
+    , quickcheck-instances
     , scientific
     , string-interpolate
     , text
