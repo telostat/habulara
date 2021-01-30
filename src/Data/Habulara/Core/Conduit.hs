@@ -5,9 +5,9 @@ import qualified Data.ByteString                     as B
 import qualified Data.ByteString.Lazy                as BL
 import           Data.Conduit                        (ConduitT, Void, runConduit, (.|))
 import qualified Data.Conduit.Combinators            as C
-import           Data.Habulara.Core.Class            (HabularaError(..), HabularaT, runHabularaT)
 import           Data.Habulara.Core.Internal.Cassava (conduitEncode, sourceCassavaRecordsContents)
 import           Data.Habulara.Core.Mapping          (FieldOperator, mapRecord)
+import           Data.Habulara.Core.Types.Class      (HabularaError(..), HabularaT, runHabularaT)
 import qualified Data.Text.Encoding                  as TE
 import qualified Data.Vector                         as V
 import           System.IO                           (Handle)

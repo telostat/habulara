@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cd0fa3624739e29e6ef4de1713cd878ed0d3ad5011f6b06048d46f7d26fc526d
+-- hash: 4b7bed17c87c83efdecfaf3dce615306d7d6836bdfadbd2461951e78fa638678
 
 name:           habulara
 version:        0.0.0.2
@@ -36,14 +36,15 @@ library
   exposed-modules:
       Data.Habulara
       Data.Habulara.Core
-      Data.Habulara.Core.Class
       Data.Habulara.Core.Conduit
       Data.Habulara.Core.Internal.Cassava
       Data.Habulara.Core.Mapping
-      Data.Habulara.Core.NonEmpty
       Data.Habulara.Core.Operation
-      Data.Habulara.Core.Record
-      Data.Habulara.Core.Value
+      Data.Habulara.Core.Types
+      Data.Habulara.Core.Types.Class
+      Data.Habulara.Core.Types.NonEmpty
+      Data.Habulara.Core.Types.Record
+      Data.Habulara.Core.Types.Value
       Data.Habulara.Dsl
       Data.Habulara.Internal.Commons.Convert
       Data.Habulara.Internal.Commons.Csv

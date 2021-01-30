@@ -2,20 +2,20 @@
 
 module Data.Habulara.Core.Internal.Cassava where
 
-import           Control.Monad            (when, (>=>))
-import           Control.Monad.Except     (MonadError(throwError))
-import           Control.Monad.IO.Class   (MonadIO(liftIO))
-import qualified Data.ByteString          as B
-import qualified Data.ByteString.Builder  as B.Builder
-import qualified Data.ByteString.Lazy     as BL
-import           Data.Char                (ord)
-import           Data.Conduit             (ConduitT, yield)
-import qualified Data.Conduit.Combinators as C
-import qualified Data.Csv                 as Cassava
-import qualified Data.Csv.Builder         as Cassava.Builder
-import qualified Data.Csv.Streaming       as Cassava.Streaming
-import           Data.Habulara.Core.Class (HabularaError(HabularaErrorCsv))
-import           System.IO                (Handle, IOMode(ReadMode), hClose, openFile)
+import           Control.Monad                  (when, (>=>))
+import           Control.Monad.Except           (MonadError(throwError))
+import           Control.Monad.IO.Class         (MonadIO(liftIO))
+import qualified Data.ByteString                as B
+import qualified Data.ByteString.Builder        as B.Builder
+import qualified Data.ByteString.Lazy           as BL
+import           Data.Char                      (ord)
+import           Data.Conduit                   (ConduitT, yield)
+import qualified Data.Conduit.Combinators       as C
+import qualified Data.Csv                       as Cassava
+import qualified Data.Csv.Builder               as Cassava.Builder
+import qualified Data.Csv.Streaming             as Cassava.Streaming
+import           Data.Habulara.Core.Types.Class (HabularaError(HabularaErrorCsv))
+import           System.IO                      (Handle, IOMode(ReadMode), hClose, openFile)
 
 
 sourceCassavaRecordsFilePath

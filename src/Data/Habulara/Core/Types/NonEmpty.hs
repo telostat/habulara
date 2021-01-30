@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.Habulara.Core.NonEmpty where
+module Data.Habulara.Core.Types.NonEmpty where
 
 import Data.Maybe  (fromMaybe)
 import Data.String (IsString(..))

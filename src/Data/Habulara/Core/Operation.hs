@@ -3,7 +3,7 @@
 --
 -- As a quick start:
 --
--- >>> import Data.Habulara.Core.Class (runHabularaIO)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", "1")]) (1, HM.empty :: Record) (select "a" >>= asEmpty)
 -- Right (VEmpty,(1,fromList []))
 -- >>> runHabularaIO (HM.fromList [("a", "1")] :: Record) (1, HM.fromList [("b", "1")]) (peek "b" >>= asEmpty)
@@ -14,18 +14,18 @@
 
 module Data.Habulara.Core.Operation where
 
-import           Control.Applicative       (Alternative((<|>)))
-import           Control.Monad.Except      (MonadError(throwError))
-import           Control.Monad.Reader      (MonadReader, asks)
-import           Control.Monad.State       (MonadState(get, put), gets)
-import           Data.Habulara.Core.Class  (HabularaError(..), MonadHabulara, liftMaybe)
-import           Data.Habulara.Core.Record (Label, Record)
-import           Data.Habulara.Core.Value  (Valuable(..), Value(..))
-import qualified Data.HashMap.Strict       as HM
-import           Data.Scientific           (Scientific)
-import qualified Data.Text                 as T
-import           Data.Time                 (Day, LocalTime)
-import           Prelude                   hiding (lookup)
+import           Control.Applicative             (Alternative((<|>)))
+import           Control.Monad.Except            (MonadError(throwError))
+import           Control.Monad.Reader            (MonadReader, asks)
+import           Control.Monad.State             (MonadState(get, put), gets)
+import           Data.Habulara.Core.Types.Class  (HabularaError(..), MonadHabulara, liftMaybe)
+import           Data.Habulara.Core.Types.Record (Label, Record)
+import           Data.Habulara.Core.Types.Value  (Valuable(..), Value(..))
+import qualified Data.HashMap.Strict             as HM
+import           Data.Scientific                 (Scientific)
+import qualified Data.Text                       as T
+import           Data.Time                       (Day, LocalTime)
+import           Prelude                         hiding (lookup)
 
 -- * Types
 --
@@ -74,7 +74,7 @@ type Operation m = MonadHabulara OperationEnvar OperationState m
 --
 -- If the label does not exist in the record, 'VEmpty' is returned.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaIO)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "a")
 -- Right (VEmpty,(1,fromList []))
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "b")
@@ -89,7 +89,7 @@ lookup s = select s <|> pure VEmpty
 -- Similar to 'lookup' but if the label does not exist in the record,
 -- 'HabularaErrorOperation' is raised instead.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaIO)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "a")
 -- Right (VEmpty,(1,fromList []))
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "b")
@@ -104,7 +104,7 @@ select s = askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find reco
 -- If the label does not exist in the state buffer record,
 -- 'HabularaErrorOperation' is raised instead.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaIO)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "a")
 -- Right (VText (MkNonEmpty {unpack = "A"}),(1,fromList [("a",VText (MkNonEmpty {unpack = "A"}))]))
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "b")
@@ -187,7 +187,7 @@ datetime = toValue
 
 -- | Converts the value to a 'VEmpty' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asEmpty VEmpty
 -- Right (VEmpty,())
 -- >>> runHabularaInVoid $ asEmpty (VInt 1)
@@ -198,7 +198,7 @@ asEmpty = pure . const VEmpty
 
 -- | Attempts to convert the given 'Value' to a 'VText' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asText VEmpty
 -- Right (VEmpty,())
 -- >>> runHabularaInVoid $ asText (VText "語")
@@ -221,7 +221,7 @@ asText x = text <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VInt' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asInt VEmpty
 -- Right (VInt 0,())
 -- >>> runHabularaInVoid $ asInt (VText "語")
@@ -244,7 +244,7 @@ asInt x = int <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VDecimal' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDecimal VEmpty
 -- Right (VDecimal 0.0,())
 -- >>> runHabularaInVoid $ asDecimal (VText "語")
@@ -267,7 +267,7 @@ asDecimal x = decimal <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VBoolean' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asBoolean VEmpty
 -- Right (VBoolean False,())
 -- >>> runHabularaInVoid $ asBoolean (VText "語")
@@ -290,7 +290,7 @@ asBoolean x = boolean <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VDate' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDate VEmpty
 -- Right (VDate 1858-11-17,())
 -- >>> runHabularaInVoid $ asDate (VText "語")
@@ -313,7 +313,7 @@ asDate x = date <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VDateTime' value.
 --
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDateTime VEmpty
 -- Right (VDateTime 1970-01-01 00:00:00,())
 -- >>> runHabularaInVoid $ asDateTime (VText "語")

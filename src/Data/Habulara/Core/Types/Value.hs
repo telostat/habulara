@@ -1,19 +1,19 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.Habulara.Core.Value where
+module Data.Habulara.Core.Types.Value where
 
-import           Control.Monad               ((>=>))
-import           Control.Monad.Except        (MonadError(throwError))
-import qualified Data.ByteString             as B
-import qualified Data.ByteString.Char8       as BC
-import qualified Data.Csv                    as Cassava
-import           Data.Habulara.Core.Class    (HabularaError(..), liftMaybe)
-import qualified Data.Habulara.Core.NonEmpty as NEV
-import           Data.Scientific             (Scientific)
-import           Data.String                 (IsString(..))
-import qualified Data.Text                   as T
-import qualified Data.Text.Encoding          as TE
+import           Control.Monad                     ((>=>))
+import           Control.Monad.Except              (MonadError(throwError))
+import qualified Data.ByteString                   as B
+import qualified Data.ByteString.Char8             as BC
+import qualified Data.Csv                          as Cassava
+import           Data.Habulara.Core.Types.Class    (HabularaError(..), liftMaybe)
+import qualified Data.Habulara.Core.Types.NonEmpty as NEV
+import           Data.Scientific                   (Scientific)
+import           Data.String                       (IsString(..))
+import qualified Data.Text                         as T
+import qualified Data.Text.Encoding                as TE
 import           Data.Time
                  ( Day(..)
                  , LocalTime(..)
@@ -24,7 +24,7 @@ import           Data.Time
                  , fromGregorian
                  , secondsToNominalDiffTime
                  )
-import           Text.Read                   (readMaybe)
+import           Text.Read                         (readMaybe)
 
 
 -- | Habulara row record field value type.

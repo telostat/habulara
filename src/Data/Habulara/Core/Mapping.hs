@@ -5,13 +5,13 @@
 
 module Data.Habulara.Core.Mapping where
 
-import           Control.Monad.Except         (MonadError(throwError))
-import           Control.Monad.State          (MonadIO(..), gets)
-import           Data.Habulara.Core.Class     (HabularaT, MonadHabulara, runHabularaT)
-import           Data.Habulara.Core.Operation (Operation, OperationEnvar, OperationState, modifyRecord)
-import           Data.Habulara.Core.Record    (Label, Record)
-import           Data.Habulara.Core.Value     (Value)
-import qualified Data.HashMap.Strict          as HM
+import           Control.Monad.Except            (MonadError(throwError))
+import           Control.Monad.State             (MonadIO(..), gets)
+import           Data.Habulara.Core.Operation    (Operation, OperationEnvar, OperationState, modifyRecord)
+import           Data.Habulara.Core.Types.Class  (HabularaT, MonadHabulara, runHabularaT)
+import           Data.Habulara.Core.Types.Record (Label, Record)
+import           Data.Habulara.Core.Types.Value  (Value)
+import qualified Data.HashMap.Strict             as HM
 
 
 -- | High-level operator type based on 'HabularaM'.

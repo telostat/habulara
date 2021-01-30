@@ -3,7 +3,7 @@
 {-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Data.Habulara.Core.Class where
+module Data.Habulara.Core.Types.Class where
 
 import           Control.Applicative    (Alternative(empty, (<|>)))
 import           Control.Monad.Except   (ExceptT, MonadError(..), MonadPlus(..), runExceptT)

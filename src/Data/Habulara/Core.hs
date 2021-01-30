@@ -10,14 +10,7 @@
 -- Essential types are given below.
 
 module Data.Habulara.Core
-  ( module Record
-  , module Value
-  , module Class
-  , module NonEmpty
+  ( module Types
   ) where
 
-
-import Data.Habulara.Core.Class    as Class
-import Data.Habulara.Core.NonEmpty as NonEmpty
-import Data.Habulara.Core.Record   as Record
-import Data.Habulara.Core.Value    as Value
+import Data.Habulara.Core.Types as Types

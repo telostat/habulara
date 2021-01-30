@@ -1,8 +1,8 @@
-module Data.Habulara.Core.Record where
+module Data.Habulara.Core.Types.Record where
 
-import           Data.Habulara.Core.Value (Value)
-import qualified Data.HashMap.Strict      as HM
-import qualified Data.Text                as T
+import           Data.Habulara.Core.Types.Value (Value)
+import qualified Data.HashMap.Strict            as HM
+import qualified Data.Text                      as T
 
 
 -- | Habulara row record type.
