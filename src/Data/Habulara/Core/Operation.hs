@@ -126,38 +126,24 @@ empty :: Value
 empty = VEmpty
 
 
--- >>> text ""
--- VEmpty
--- >>> text " "
--- VText (MkNonEmpty {unpack = " "})
-text :: T.Text -> Value
-text = toValue
-
-
--- >>> decimal 42
--- VNumber 42.0
-decimal :: Scientific -> Value
-decimal = toValue
-
-
--- >>> boolean True
+-- >>> bool True
 -- VBool True
--- >>> boolean False
+-- >>> bool False
 -- VBool False
-boolean :: Bool -> Value
-boolean = toValue
+bool :: Bool -> Value
+bool = toValue
 
 
 -- >>> true
 -- VBool True
 true :: Value
-true = boolean True
+true = bool True
 
 
 -- >>> false
 -- VBool False
 false :: Value
-false = boolean False
+false = bool False
 
 
 -- >>> date (read "2020-12-31")
@@ -166,10 +152,24 @@ date :: Day -> Value
 date = toValue
 
 
--- >>> datetime (read "2020-12-31 23:59:59")
--- VDateTime 2020-12-31 23:59:59
-datetime :: LocalTime -> Value
-datetime = toValue
+-- >>> time (read "2020-12-31 23:59:59")
+-- VTime 2020-12-31 23:59:59
+time :: LocalTime -> Value
+time = toValue
+
+
+-- >>> number 42
+-- VNumber 42.0
+number :: Scientific -> Value
+number = toValue
+
+
+-- >>> text ""
+-- VEmpty
+-- >>> text " "
+-- VText (MkNonEmpty {unpack = " "})
+text :: T.Text -> Value
+text = toValue
 
 
 -- ** Value Converters
@@ -190,67 +190,25 @@ asEmpty :: Monad m => Value -> m Value
 asEmpty = pure . const VEmpty
 
 
--- | Attempts to convert the given 'Value' to a 'VText' value.
---
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
--- >>> runHabularaInVoid $ asText VEmpty
--- Right (VEmpty,())
--- >>> runHabularaInVoid $ asText (VText "語")
--- Right (VText (MkNonEmpty {unpack = "\35486"}),())
--- >>> runHabularaInVoid $ asText (VNumber 42.0)
--- Right (VText (MkNonEmpty {unpack = "42.0"}),())
--- >>> runHabularaInVoid $ asText (VBool True)
--- Right (VText (MkNonEmpty {unpack = "True"}),())
--- >>> runHabularaInVoid $ asText (VBool False)
--- Right (VText (MkNonEmpty {unpack = "False"}),())
--- >>> runHabularaInVoid $ asText (VDate $ read "2020-12-31")
--- Right (VText (MkNonEmpty {unpack = "2020-12-31"}),())
--- >>> runHabularaInVoid $ asText (VDateTime $ read "2020-12-31 23:59:59")
--- Right (VText (MkNonEmpty {unpack = "2020-12-31 23:59:59"}),())
-asText :: MonadError HabularaError m => Value -> m Value
-asText x = text <$> fromValue x
-
-
--- | Attempts to convert the given 'Value' to a 'VNumber' value.
---
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
--- >>> runHabularaInVoid $ asDecimal VEmpty
--- Right (VNumber 0.0,())
--- >>> runHabularaInVoid $ asDecimal (VText "語")
--- Left (HabularaErrorRead "Can not read Scientific from: \232\170\158")
--- >>> runHabularaInVoid $ asDecimal (VNumber 42.0)
--- Right (VNumber 42.0,())
--- >>> runHabularaInVoid $ asDecimal (VBool True)
--- Right (VNumber 1.0,())
--- >>> runHabularaInVoid $ asDecimal (VBool False)
--- Right (VNumber 0.0,())
--- >>> runHabularaInVoid $ asDecimal (VDate $ read "2020-12-31")
--- Right (VNumber 59214.0,())
--- >>> runHabularaInVoid $ asDecimal (VDateTime $ read "2020-12-31 23:59:59")
--- Right (VNumber 1.609459199e9,())
-asDecimal :: MonadError HabularaError m => Value -> m Value
-asDecimal x = decimal <$> fromValue x
-
-
 -- | Attempts to convert the given 'Value' to a 'VBool' value.
 --
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
--- >>> runHabularaInVoid $ asBoolean VEmpty
+-- >>> runHabularaInVoid $ asBool VEmpty
 -- Right (VBool False,())
--- >>> runHabularaInVoid $ asBoolean (VText "語")
+-- >>> runHabularaInVoid $ asBool (VText "語")
 -- Left (HabularaErrorRead "Can not read Boolean from: \232\170\158")
--- >>> runHabularaInVoid $ asBoolean (VNumber 42.0)
+-- >>> runHabularaInVoid $ asBool (VNumber 42.0)
 -- Right (VBool True,())
--- >>> runHabularaInVoid $ asBoolean (VBool True)
+-- >>> runHabularaInVoid $ asBool (VBool True)
 -- Right (VBool True,())
--- >>> runHabularaInVoid $ asBoolean (VBool False)
+-- >>> runHabularaInVoid $ asBool (VBool False)
 -- Right (VBool False,())
--- >>> runHabularaInVoid $ asBoolean (VDate $ read "2020-12-31")
+-- >>> runHabularaInVoid $ asBool (VDate $ read "2020-12-31")
 -- Left (HabularaErrorValueConversion "Can not convert to Boolean: VDate 2020-12-31")
--- >>> runHabularaInVoid $ asBoolean (VDateTime $ read "2020-12-31 23:59:59")
--- Left (HabularaErrorValueConversion "Can not convert to Boolean: VDateTime 2020-12-31 23:59:59")
-asBoolean :: MonadError HabularaError m => Value -> m Value
-asBoolean x = boolean <$> fromValue x
+-- >>> runHabularaInVoid $ asBool (VTime $ read "2020-12-31 23:59:59")
+-- Left (HabularaErrorValueConversion "Can not convert to Boolean: VTime 2020-12-31 23:59:59")
+asBool :: MonadError HabularaError m => Value -> m Value
+asBool x = bool <$> fromValue x
 
 
 -- | Attempts to convert the given 'Value' to a 'VDate' value.
@@ -268,31 +226,73 @@ asBoolean x = boolean <$> fromValue x
 -- Left (HabularaErrorValueConversion "Can not convert to Date: VBool False")
 -- >>> runHabularaInVoid $ asDate (VDate $ read "2020-12-31")
 -- Right (VDate 2020-12-31,())
--- >>> runHabularaInVoid $ asDate (VDateTime $ read "2020-12-31 23:59:59")
+-- >>> runHabularaInVoid $ asDate (VTime $ read "2020-12-31 23:59:59")
 -- Right (VDate 2020-12-31,())
 asDate :: MonadError HabularaError m => Value -> m Value
 asDate x = date <$> fromValue x
 
 
--- | Attempts to convert the given 'Value' to a 'VDateTime' value.
+-- | Attempts to convert the given 'Value' to a 'VTime' value.
 --
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
--- >>> runHabularaInVoid $ asDateTime VEmpty
--- Right (VDateTime 1970-01-01 00:00:00,())
--- >>> runHabularaInVoid $ asDateTime (VText "語")
+-- >>> runHabularaInVoid $ asTime VEmpty
+-- Right (VTime 1970-01-01 00:00:00,())
+-- >>> runHabularaInVoid $ asTime (VText "語")
 -- Left (HabularaErrorRead "Can not read LocalTime from: \232\170\158")
--- >>> runHabularaInVoid $ asDateTime (VNumber 42.0)
--- Right (VDateTime 1970-01-01 00:00:42,())
--- >>> runHabularaInVoid $ asDateTime (VBool True)
+-- >>> runHabularaInVoid $ asTime (VNumber 42.0)
+-- Right (VTime 1970-01-01 00:00:42,())
+-- >>> runHabularaInVoid $ asTime (VBool True)
 -- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBool True")
--- >>> runHabularaInVoid $ asDateTime (VBool False)
+-- >>> runHabularaInVoid $ asTime (VBool False)
 -- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBool False")
--- >>> runHabularaInVoid $ asDateTime (VDate $ read "2020-12-31")
--- Right (VDateTime 2020-12-31 00:00:00,())
--- >>> runHabularaInVoid $ asDateTime (VDateTime $ read "2020-12-31 23:59:59")
--- Right (VDateTime 2020-12-31 23:59:59,())
-asDateTime :: MonadError HabularaError m => Value -> m Value
-asDateTime x = datetime <$> fromValue x
+-- >>> runHabularaInVoid $ asTime (VDate $ read "2020-12-31")
+-- Right (VTime 2020-12-31 00:00:00,())
+-- >>> runHabularaInVoid $ asTime (VTime $ read "2020-12-31 23:59:59")
+-- Right (VTime 2020-12-31 23:59:59,())
+asTime :: MonadError HabularaError m => Value -> m Value
+asTime x = time <$> fromValue x
+
+
+-- | Attempts to convert the given 'Value' to a 'VNumber' value.
+--
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
+-- >>> runHabularaInVoid $ asNumber VEmpty
+-- Right (VNumber 0.0,())
+-- >>> runHabularaInVoid $ asNumber (VText "語")
+-- Left (HabularaErrorRead "Can not read Scientific from: \232\170\158")
+-- >>> runHabularaInVoid $ asNumber (VNumber 42.0)
+-- Right (VNumber 42.0,())
+-- >>> runHabularaInVoid $ asNumber (VBool True)
+-- Right (VNumber 1.0,())
+-- >>> runHabularaInVoid $ asNumber (VBool False)
+-- Right (VNumber 0.0,())
+-- >>> runHabularaInVoid $ asNumber (VDate $ read "2020-12-31")
+-- Right (VNumber 59214.0,())
+-- >>> runHabularaInVoid $ asNumber (VTime $ read "2020-12-31 23:59:59")
+-- Right (VNumber 1.609459199e9,())
+asNumber :: MonadError HabularaError m => Value -> m Value
+asNumber x = number <$> fromValue x
+
+
+-- | Attempts to convert the given 'Value' to a 'VText' value.
+--
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
+-- >>> runHabularaInVoid $ asText VEmpty
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ asText (VText "語")
+-- Right (VText (MkNonEmpty {unpack = "\35486"}),())
+-- >>> runHabularaInVoid $ asText (VNumber 42.0)
+-- Right (VText (MkNonEmpty {unpack = "42.0"}),())
+-- >>> runHabularaInVoid $ asText (VBool True)
+-- Right (VText (MkNonEmpty {unpack = "True"}),())
+-- >>> runHabularaInVoid $ asText (VBool False)
+-- Right (VText (MkNonEmpty {unpack = "False"}),())
+-- >>> runHabularaInVoid $ asText (VDate $ read "2020-12-31")
+-- Right (VText (MkNonEmpty {unpack = "2020-12-31"}),())
+-- >>> runHabularaInVoid $ asText (VTime $ read "2020-12-31 23:59:59")
+-- Right (VText (MkNonEmpty {unpack = "2020-12-31 23:59:59"}),())
+asText :: MonadError HabularaError m => Value -> m Value
+asText x = text <$> fromValue x
 
 
 -- * Helpers

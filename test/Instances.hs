@@ -31,8 +31,8 @@ instance Arbitrary Value where
     n <- choose (1, 6 :: Int)
     case n of
       1 -> pure VEmpty
-      2 -> VText     <$> arbitrary
-      3 -> VNumber   <$> arbitrary
-      4 -> VBoolean  <$> arbitrary
-      5 -> VDate     <$> arbitrary
-      6 -> VDateTime <$> arbitrary
+      2 -> VBool   <$> arbitrary
+      3 -> VDate   <$> arbitrary
+      4 -> VTime   <$> arbitrary
+      5 -> VNumber <$> arbitrary
+      6 -> VText   <$> arbitrary
