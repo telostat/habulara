@@ -30,11 +30,11 @@ import           Text.Read                         (readMaybe)
 -- | Habulara row record field value type.
 data Value =
     VEmpty
-  | VText     !(NEV.NonEmpty T.Text)
-  | VNumber  !Scientific
-  | VBoolean  !Bool
+  | VBool  !Bool
+  | VNumber   !Scientific
   | VDate     !Day
   | VDateTime !LocalTime
+  | VText     !(NEV.NonEmpty T.Text)
   deriving (Eq, Ord, Show)
 
 
@@ -80,9 +80,9 @@ instance Cassava.FromField Value where
 -- "Hello"
 -- >>> Cassava.toField $ VNumber (read "42")
 -- "42.0"
--- >>> Cassava.toField $ VBoolean True
+-- >>> Cassava.toField $ VBool True
 -- "True"
--- >>> Cassava.toField $ VBoolean False
+-- >>> Cassava.toField $ VBool False
 -- "False"
 -- >>> Cassava.toField $ VDate (read "2021-01-01")
 -- "2021-01-01"
@@ -155,7 +155,7 @@ instance Valuable Value where
   toByteString VEmpty        = B.empty
   toByteString (VText t)     = toByteString $ NEV.unpack t
   toByteString (VNumber d)   = toByteString d
-  toByteString (VBoolean b)  = toByteString b
+  toByteString (VBool b)     = toByteString b
   toByteString (VDate d)     = toByteString d
   toByteString (VDateTime t) = toByteString t
 
@@ -237,9 +237,9 @@ instance Valuable T.Text where
 -- Left (HabularaErrorRead "Can not read Scientific from: 1a")
 -- >>> fromValue (VNumber 42) :: Either HabularaError Scientific
 -- Right 42.0
--- >>> fromValue (VBoolean False) :: Either HabularaError Scientific
+-- >>> fromValue (VBool False) :: Either HabularaError Scientific
 -- Right 0.0
--- >>> fromValue (VBoolean True) :: Either HabularaError Scientific
+-- >>> fromValue (VBool True) :: Either HabularaError Scientific
 -- Right 1.0
 -- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Scientific
 -- Right 59214.0
@@ -256,13 +256,13 @@ instance Valuable Scientific where
 
   toValue = VNumber
 
-  fromValue VEmpty           = pure identity
-  fromValue (VNumber x)      = pure x
-  fromValue (VBoolean False) = pure 0
-  fromValue (VBoolean True)  = pure 1
-  fromValue (VDate x)        = pure . fromIntegral . toModifiedJulianDay $ x
-  fromValue (VDateTime x)    = pure . realToFrac $ epoch x
-  fromValue v                = fromByteString . toByteString $ v
+  fromValue VEmpty        = pure identity
+  fromValue (VNumber x)   = pure x
+  fromValue (VBool False) = pure 0
+  fromValue (VBool True)  = pure 1
+  fromValue (VDate x)     = pure . fromIntegral . toModifiedJulianDay $ x
+  fromValue (VDateTime x) = pure . realToFrac $ epoch x
+  fromValue v             = fromByteString . toByteString $ v
 
   toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
@@ -274,9 +274,9 @@ instance Valuable Scientific where
 -- | 'Valuable' instance for 'Bool' type.
 --
 -- >>> toValue True
--- VBoolean True
+-- VBool True
 -- >>> toValue False
--- VBoolean False
+-- VBool False
 -- >>> fromValue VEmpty :: Either HabularaError Bool
 -- Right False
 -- >>> fromValue (VText "0") :: Either HabularaError Bool
@@ -293,17 +293,17 @@ instance Valuable Scientific where
 -- Right True
 -- >>> fromValue (VNumber 42) :: Either HabularaError Bool
 -- Right True
--- >>> fromValue (VBoolean False) :: Either HabularaError Bool
+-- >>> fromValue (VBool False) :: Either HabularaError Bool
 -- Right False
--- >>> fromValue (VBoolean True) :: Either HabularaError Bool
+-- >>> fromValue (VBool True) :: Either HabularaError Bool
 -- Right True
 -- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Bool
 -- Left (HabularaErrorValueConversion "Can not convert to Boolean: VDate 2020-12-31")
 -- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError Bool
 -- Left (HabularaErrorValueConversion "Can not convert to Boolean: VDateTime 2020-12-31 23:59:59.001")
--- >>> toByteString (VBoolean True)
+-- >>> toByteString (VBool True)
 -- "True"
--- >>> toByteString (VBoolean False)
+-- >>> toByteString (VBool False)
 -- "False"
 -- >>> fromByteString "True" :: Either HabularaError Bool
 -- Right True
@@ -312,11 +312,11 @@ instance Valuable Scientific where
 instance Valuable Bool where
   identity = False
 
-  toValue = VBoolean
+  toValue = VBool
 
   fromValue VEmpty          = pure identity
   fromValue (VNumber x)     = pure $ x /= 0
-  fromValue (VBoolean x)    = pure x
+  fromValue (VBool x)       = pure x
   fromValue x@(VDate _)     = raiseConversionError "Boolean" x
   fromValue x@(VDateTime _) = raiseConversionError "Boolean" x
   fromValue v               = fromByteString . toByteString $ v
@@ -345,10 +345,10 @@ instance Valuable Bool where
 -- Right 1858-11-18
 -- >>> fromValue (VNumber 42) :: Either HabularaError Day
 -- Right 1858-12-29
--- >>> fromValue (VBoolean False) :: Either HabularaError Day
--- Left (HabularaErrorValueConversion "Can not convert to Date: VBoolean False")
--- >>> fromValue (VBoolean True) :: Either HabularaError Day
--- Left (HabularaErrorValueConversion "Can not convert to Date: VBoolean True")
+-- >>> fromValue (VBool False) :: Either HabularaError Day
+-- Left (HabularaErrorValueConversion "Can not convert to Date: VBool False")
+-- >>> fromValue (VBool True) :: Either HabularaError Day
+-- Left (HabularaErrorValueConversion "Can not convert to Date: VBool True")
 -- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError Day
 -- Right 2020-12-31
 -- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError Day
@@ -362,12 +362,12 @@ instance Valuable Day where
 
   toValue = VDate
 
-  fromValue VEmpty         = pure identity
-  fromValue (VNumber x)    = pure . ModifiedJulianDay . floor $ x
-  fromValue x@(VBoolean _) = raiseConversionError "Date" x
-  fromValue (VDate x)      = pure x
-  fromValue (VDateTime x)  = pure . localDay $ x
-  fromValue v              = fromByteString . toByteString $ v
+  fromValue VEmpty        = pure identity
+  fromValue (VNumber x)   = pure . ModifiedJulianDay . floor $ x
+  fromValue x@(VBool _)   = raiseConversionError "Date" x
+  fromValue (VDate x)     = pure x
+  fromValue (VDateTime x) = pure . localDay $ x
+  fromValue v             = fromByteString . toByteString $ v
 
   toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
@@ -408,10 +408,10 @@ instance Valuable Day where
 -- Right 1970-01-01 00:00:42.000000000001
 -- >>> fromValue (VNumber 42.0000000000009) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42
--- >>> fromValue (VBoolean False) :: Either HabularaError LocalTime
--- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBoolean False")
--- >>> fromValue (VBoolean True) :: Either HabularaError LocalTime
--- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBoolean True")
+-- >>> fromValue (VBool False) :: Either HabularaError LocalTime
+-- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBool False")
+-- >>> fromValue (VBool True) :: Either HabularaError LocalTime
+-- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBool True")
 -- >>> fromValue (VDate $ read "2020-12-31") :: Either HabularaError LocalTime
 -- Right 2020-12-31 00:00:00
 -- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError LocalTime
@@ -427,7 +427,7 @@ instance Valuable LocalTime where
 
   fromValue VEmpty         = pure identity
   fromValue (VNumber x)   = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
-  fromValue x@(VBoolean _) = raiseConversionError "LocalTime" x
+  fromValue x@(VBool _) = raiseConversionError "LocalTime" x
   fromValue (VDate x)      = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
   fromValue (VDateTime x)  = pure x
   fromValue v              = fromByteString . toByteString $ v
