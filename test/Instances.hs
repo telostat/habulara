@@ -32,7 +32,7 @@ instance Arbitrary Value where
     case n of
       1 -> pure VEmpty
       2 -> VText     <$> arbitrary
-      3 -> VDecimal  <$> arbitrary
+      3 -> VNumber   <$> arbitrary
       4 -> VBoolean  <$> arbitrary
       5 -> VDate     <$> arbitrary
       6 -> VDateTime <$> arbitrary

@@ -31,7 +31,7 @@ import           Text.Read                         (readMaybe)
 data Value =
     VEmpty
   | VText     !(NEV.NonEmpty T.Text)
-  | VDecimal  !Scientific
+  | VNumber  !Scientific
   | VBoolean  !Bool
   | VDate     !Day
   | VDateTime !LocalTime
@@ -78,7 +78,7 @@ instance Cassava.FromField Value where
 -- ""
 -- >>> Cassava.toField $ VText "Hello"
 -- "Hello"
--- >>> Cassava.toField $ VDecimal (read "42")
+-- >>> Cassava.toField $ VNumber (read "42")
 -- "42.0"
 -- >>> Cassava.toField $ VBoolean True
 -- "True"
@@ -154,7 +154,7 @@ instance Valuable Value where
 
   toByteString VEmpty        = B.empty
   toByteString (VText t)     = toByteString $ NEV.unpack t
-  toByteString (VDecimal d)  = toByteString d
+  toByteString (VNumber d)   = toByteString d
   toByteString (VBoolean b)  = toByteString b
   toByteString (VDate d)     = toByteString d
   toByteString (VDateTime t) = toByteString t
@@ -228,14 +228,14 @@ instance Valuable T.Text where
 -- | 'Valuable' instance for 'Scientific' type.
 --
 -- >>> toValue (42 :: Scientific)
--- VDecimal 42.0
+-- VNumber 42.0
 -- >>> fromValue VEmpty :: Either HabularaError Scientific
 -- Right 0.0
 -- >>> fromValue (VText "1") :: Either HabularaError Scientific
 -- Right 1.0
 -- >>> fromValue (VText "1a") :: Either HabularaError Scientific
 -- Left (HabularaErrorRead "Can not read Scientific from: 1a")
--- >>> fromValue (VDecimal 42) :: Either HabularaError Scientific
+-- >>> fromValue (VNumber 42) :: Either HabularaError Scientific
 -- Right 42.0
 -- >>> fromValue (VBoolean False) :: Either HabularaError Scientific
 -- Right 0.0
@@ -245,7 +245,7 @@ instance Valuable T.Text where
 -- Right 59214.0
 -- >>> fromValue (VDateTime $ read "2020-12-31 23:59:59.001") :: Either HabularaError Scientific
 -- Right 1.609459199001e9
--- >>> toByteString (VDecimal 42)
+-- >>> toByteString (VNumber 42)
 -- "42.0"
 -- >>> fromByteString "42" :: Either HabularaError Scientific
 -- Right 42.0
@@ -254,10 +254,10 @@ instance Valuable T.Text where
 instance Valuable Scientific where
   identity = 0
 
-  toValue = VDecimal
+  toValue = VNumber
 
   fromValue VEmpty           = pure identity
-  fromValue (VDecimal x)     = pure x
+  fromValue (VNumber x)      = pure x
   fromValue (VBoolean False) = pure 0
   fromValue (VBoolean True)  = pure 1
   fromValue (VDate x)        = pure . fromIntegral . toModifiedJulianDay $ x
@@ -287,11 +287,11 @@ instance Valuable Scientific where
 -- Right True
 -- >>> fromValue (VText "False") :: Either HabularaError Bool
 -- Right False
--- >>> fromValue (VDecimal 0) :: Either HabularaError Bool
+-- >>> fromValue (VNumber 0) :: Either HabularaError Bool
 -- Right False
--- >>> fromValue (VDecimal 1) :: Either HabularaError Bool
+-- >>> fromValue (VNumber 1) :: Either HabularaError Bool
 -- Right True
--- >>> fromValue (VDecimal 42) :: Either HabularaError Bool
+-- >>> fromValue (VNumber 42) :: Either HabularaError Bool
 -- Right True
 -- >>> fromValue (VBoolean False) :: Either HabularaError Bool
 -- Right False
@@ -315,7 +315,7 @@ instance Valuable Bool where
   toValue = VBoolean
 
   fromValue VEmpty          = pure identity
-  fromValue (VDecimal x)    = pure $ x /= 0
+  fromValue (VNumber x)     = pure $ x /= 0
   fromValue (VBoolean x)    = pure x
   fromValue x@(VDate _)     = raiseConversionError "Boolean" x
   fromValue x@(VDateTime _) = raiseConversionError "Boolean" x
@@ -339,11 +339,11 @@ instance Valuable Bool where
 -- Left (HabularaErrorRead "Can not read Date from:  ")
 -- >>> fromValue (VText "2020-12-31") :: Either HabularaError Day
 -- Right 2020-12-31
--- >>> fromValue (VDecimal 0) :: Either HabularaError Day
+-- >>> fromValue (VNumber 0) :: Either HabularaError Day
 -- Right 1858-11-17
--- >>> fromValue (VDecimal 1) :: Either HabularaError Day
+-- >>> fromValue (VNumber 1) :: Either HabularaError Day
 -- Right 1858-11-18
--- >>> fromValue (VDecimal 42) :: Either HabularaError Day
+-- >>> fromValue (VNumber 42) :: Either HabularaError Day
 -- Right 1858-12-29
 -- >>> fromValue (VBoolean False) :: Either HabularaError Day
 -- Left (HabularaErrorValueConversion "Can not convert to Date: VBoolean False")
@@ -363,7 +363,7 @@ instance Valuable Day where
   toValue = VDate
 
   fromValue VEmpty         = pure identity
-  fromValue (VDecimal x)   = pure . ModifiedJulianDay . floor $ x
+  fromValue (VNumber x)    = pure . ModifiedJulianDay . floor $ x
   fromValue x@(VBoolean _) = raiseConversionError "Date" x
   fromValue (VDate x)      = pure x
   fromValue (VDateTime x)  = pure . localDay $ x
@@ -392,21 +392,21 @@ instance Valuable Day where
 -- Right 2020-12-31 23:59:59.000000000001
 -- >>> fromValue (VText "2020-12-31 23:59:59.0000000000009") :: Either HabularaError LocalTime
 -- Right 2020-12-31 23:59:59
--- >>> fromValue (VDecimal 0) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 0) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:00
--- >>> fromValue (VDecimal 1) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 1) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:01
--- >>> fromValue (VDecimal 42) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 42) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42
--- >>> fromValue (VDecimal 42.001) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 42.001) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42.001
--- >>> fromValue (VDecimal 42.000001) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 42.000001) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42.000001
--- >>> fromValue (VDecimal 42.000000001) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 42.000000001) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42.000000001
--- >>> fromValue (VDecimal 42.000000000001) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 42.000000000001) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42.000000000001
--- >>> fromValue (VDecimal 42.0000000000009) :: Either HabularaError LocalTime
+-- >>> fromValue (VNumber 42.0000000000009) :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:42
 -- >>> fromValue (VBoolean False) :: Either HabularaError LocalTime
 -- Left (HabularaErrorValueConversion "Can not convert to LocalTime: VBoolean False")
@@ -426,7 +426,7 @@ instance Valuable LocalTime where
   toValue = VDateTime
 
   fromValue VEmpty         = pure identity
-  fromValue (VDecimal x)   = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
+  fromValue (VNumber x)   = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
   fromValue x@(VBoolean _) = raiseConversionError "LocalTime" x
   fromValue (VDate x)      = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
   fromValue (VDateTime x)  = pure x
