@@ -28,12 +28,11 @@ instance Arbitrary (NonEmpty T.Text) where
 
 instance Arbitrary Value where
   arbitrary = do
-    n <- choose (1, 7 :: Int)
+    n <- choose (1, 6 :: Int)
     case n of
       1 -> pure VEmpty
       2 -> VText     <$> arbitrary
-      3 -> VInt      <$> arbitrary
-      4 -> VDecimal  <$> arbitrary
-      5 -> VBoolean  <$> arbitrary
-      6 -> VDate     <$> arbitrary
-      7 -> VDateTime <$> arbitrary
+      3 -> VDecimal  <$> arbitrary
+      4 -> VBoolean  <$> arbitrary
+      5 -> VDate     <$> arbitrary
+      6 -> VDateTime <$> arbitrary

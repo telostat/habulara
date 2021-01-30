@@ -134,12 +134,6 @@ text :: T.Text -> Value
 text = toValue
 
 
--- >>> int 42
--- VInt 42
-int :: Integer -> Value
-int = toValue
-
-
 -- >>> decimal 42
 -- VDecimal 42.0
 decimal :: Scientific -> Value
@@ -190,7 +184,7 @@ datetime = toValue
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asEmpty VEmpty
 -- Right (VEmpty,())
--- >>> runHabularaInVoid $ asEmpty (VInt 1)
+-- >>> runHabularaInVoid $ asEmpty (text " ")
 -- Right (VEmpty,())
 asEmpty :: Monad m => Value -> m Value
 asEmpty = pure . const VEmpty
@@ -203,8 +197,6 @@ asEmpty = pure . const VEmpty
 -- Right (VEmpty,())
 -- >>> runHabularaInVoid $ asText (VText "語")
 -- Right (VText (MkNonEmpty {unpack = "\35486"}),())
--- >>> runHabularaInVoid $ asText (VInt 42)
--- Right (VText (MkNonEmpty {unpack = "42"}),())
 -- >>> runHabularaInVoid $ asText (VDecimal 42.0)
 -- Right (VText (MkNonEmpty {unpack = "42.0"}),())
 -- >>> runHabularaInVoid $ asText (VBoolean True)
@@ -219,29 +211,6 @@ asText :: MonadError HabularaError m => Value -> m Value
 asText x = text <$> fromValue x
 
 
--- | Attempts to convert the given 'Value' to a 'VInt' value.
---
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
--- >>> runHabularaInVoid $ asInt VEmpty
--- Right (VInt 0,())
--- >>> runHabularaInVoid $ asInt (VText "語")
--- Left (HabularaErrorRead "Can not read Integer from: \232\170\158")
--- >>> runHabularaInVoid $ asInt (VInt 42)
--- Right (VInt 42,())
--- >>> runHabularaInVoid $ asInt (VDecimal 42.0)
--- Right (VInt 42,())
--- >>> runHabularaInVoid $ asInt (VBoolean True)
--- Right (VInt 1,())
--- >>> runHabularaInVoid $ asInt (VBoolean False)
--- Right (VInt 0,())
--- >>> runHabularaInVoid $ asInt (VDate $ read "2020-12-31")
--- Right (VInt 59214,())
--- >>> runHabularaInVoid $ asInt (VDateTime $ read "2020-12-31 23:59:59")
--- Right (VInt 1609459199,())
-asInt :: MonadError HabularaError m => Value -> m Value
-asInt x = int <$> fromValue x
-
-
 -- | Attempts to convert the given 'Value' to a 'VDecimal' value.
 --
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
@@ -249,8 +218,6 @@ asInt x = int <$> fromValue x
 -- Right (VDecimal 0.0,())
 -- >>> runHabularaInVoid $ asDecimal (VText "語")
 -- Left (HabularaErrorRead "Can not read Scientific from: \232\170\158")
--- >>> runHabularaInVoid $ asDecimal (VInt 42)
--- Right (VDecimal 42.0,())
 -- >>> runHabularaInVoid $ asDecimal (VDecimal 42.0)
 -- Right (VDecimal 42.0,())
 -- >>> runHabularaInVoid $ asDecimal (VBoolean True)
@@ -272,8 +239,6 @@ asDecimal x = decimal <$> fromValue x
 -- Right (VBoolean False,())
 -- >>> runHabularaInVoid $ asBoolean (VText "語")
 -- Left (HabularaErrorRead "Can not read Boolean from: \232\170\158")
--- >>> runHabularaInVoid $ asBoolean (VInt 42)
--- Right (VBoolean True,())
 -- >>> runHabularaInVoid $ asBoolean (VDecimal 42.0)
 -- Right (VBoolean True,())
 -- >>> runHabularaInVoid $ asBoolean (VBoolean True)
@@ -295,8 +260,6 @@ asBoolean x = boolean <$> fromValue x
 -- Right (VDate 1858-11-17,())
 -- >>> runHabularaInVoid $ asDate (VText "語")
 -- Left (HabularaErrorRead "Can not read Date from: \232\170\158")
--- >>> runHabularaInVoid $ asDate (VInt 42)
--- Right (VDate 1858-12-29,())
 -- >>> runHabularaInVoid $ asDate (VDecimal 42.0)
 -- Right (VDate 1858-12-29,())
 -- >>> runHabularaInVoid $ asDate (VBoolean True)
@@ -318,8 +281,6 @@ asDate x = date <$> fromValue x
 -- Right (VDateTime 1970-01-01 00:00:00,())
 -- >>> runHabularaInVoid $ asDateTime (VText "語")
 -- Left (HabularaErrorRead "Can not read LocalTime from: \232\170\158")
--- >>> runHabularaInVoid $ asDateTime (VInt 42)
--- Right (VDateTime 1970-01-01 00:00:42,())
 -- >>> runHabularaInVoid $ asDateTime (VDecimal 42.0)
 -- Right (VDateTime 1970-01-01 00:00:42,())
 -- >>> runHabularaInVoid $ asDateTime (VBoolean True)
