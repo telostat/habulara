@@ -7,7 +7,7 @@
 -- >>> runHabularaIO (HM.fromList [("a", "1")]) (1, HM.empty :: Record) (select "a" >>= asEmpty)
 -- Right (VEmpty,(1,fromList []))
 -- >>> runHabularaIO (HM.fromList [("a", "1")] :: Record) (1, HM.fromList [("b", "1")]) (peek "b" >>= asEmpty)
--- Right (VEmpty,(1,fromList [("b",VRaw (MkNonEmpty {unpack = "1"}))]))
+-- Right (VEmpty,(1,fromList [("b",VText (MkNonEmpty {unpack = "1"}))]))
 
 {-# LANGUAGE ConstraintKinds  #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -18,7 +18,6 @@ import           Control.Applicative       (Alternative((<|>)))
 import           Control.Monad.Except      (MonadError(throwError))
 import           Control.Monad.Reader      (MonadReader, asks)
 import           Control.Monad.State       (MonadState(get, put), gets)
-import qualified Data.ByteString           as B
 import           Data.Habulara.Core.Class  (HabularaError(..), MonadHabulara, liftMaybe)
 import           Data.Habulara.Core.Record (Label, Record)
 import           Data.Habulara.Core.Value  (Valuable(..), Value(..))
@@ -107,7 +106,7 @@ select s = askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find reco
 --
 -- >>> import Data.Habulara.Core.Class (runHabularaIO)
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "a")
--- Right (VRaw (MkNonEmpty {unpack = "A"}),(1,fromList [("a",VRaw (MkNonEmpty {unpack = "A"}))]))
+-- Right (VText (MkNonEmpty {unpack = "A"}),(1,fromList [("a",VText (MkNonEmpty {unpack = "A"}))]))
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "b")
 -- Left (HabularaErrorOperation "Can not find buffer record field with label: b")
 peek :: (MonadState OperationState m, MonadError HabularaError m) => T.Text -> m Value
@@ -125,14 +124,6 @@ peek s = getLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find buffer
 -- VEmpty
 empty :: Value
 empty = VEmpty
-
-
--- >>> raw ""
--- VEmpty
--- >>> raw " "
--- VRaw (MkNonEmpty {unpack = " "})
-raw :: B.ByteString -> Value
-raw = toValue
 
 
 -- >>> text ""
@@ -205,38 +196,11 @@ asEmpty :: Monad m => Value -> m Value
 asEmpty = pure . const VEmpty
 
 
--- | Attempts to convert the given 'Value' to a 'VRaw' value.
---
--- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
--- >>> runHabularaInVoid $ asRaw VEmpty
--- Right (VEmpty,())
--- >>> runHabularaInVoid $ asRaw (VRaw "語")
--- Right (VRaw (MkNonEmpty {unpack = "\158"}),())
--- >>> runHabularaInVoid $ asRaw (VText "語")
--- Right (VRaw (MkNonEmpty {unpack = "\232\170\158"}),())
--- >>> runHabularaInVoid $ asRaw (VInt 42)
--- Right (VRaw (MkNonEmpty {unpack = "42"}),())
--- >>> runHabularaInVoid $ asRaw (VDecimal 42.0)
--- Right (VRaw (MkNonEmpty {unpack = "42.0"}),())
--- >>> runHabularaInVoid $ asRaw (VBoolean True)
--- Right (VRaw (MkNonEmpty {unpack = "True"}),())
--- >>> runHabularaInVoid $ asRaw (VBoolean False)
--- Right (VRaw (MkNonEmpty {unpack = "False"}),())
--- >>> runHabularaInVoid $ asRaw (VDate $ read "2020-12-31")
--- Right (VRaw (MkNonEmpty {unpack = "2020-12-31"}),())
--- >>> runHabularaInVoid $ asRaw (VDateTime $ read "2020-12-31 23:59:59")
--- Right (VRaw (MkNonEmpty {unpack = "2020-12-31 23:59:59"}),())
-asRaw :: MonadError HabularaError m => Value -> m Value
-asRaw x = raw <$> fromValue x
-
-
--- | Attempts to convert the given 'Value' to a 'VRaw' value.
+-- | Attempts to convert the given 'Value' to a 'VText' value.
 --
 -- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asText VEmpty
 -- Right (VEmpty,())
--- >>> runHabularaInVoid $ asText (VRaw "zartzurt")
--- Right (VText (MkNonEmpty {unpack = "zartzurt"}),())
 -- >>> runHabularaInVoid $ asText (VText "語")
 -- Right (VText (MkNonEmpty {unpack = "\35486"}),())
 -- >>> runHabularaInVoid $ asText (VInt 42)
@@ -260,8 +224,6 @@ asText x = text <$> fromValue x
 -- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asInt VEmpty
 -- Right (VInt 0,())
--- >>> runHabularaInVoid $ asInt (VRaw "語")
--- Left (HabularaErrorRead "Can not read Integer from: \158")
 -- >>> runHabularaInVoid $ asInt (VText "語")
 -- Left (HabularaErrorRead "Can not read Integer from: \232\170\158")
 -- >>> runHabularaInVoid $ asInt (VInt 42)
@@ -285,8 +247,6 @@ asInt x = int <$> fromValue x
 -- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDecimal VEmpty
 -- Right (VDecimal 0.0,())
--- >>> runHabularaInVoid $ asDecimal (VRaw "語")
--- Left (HabularaErrorRead "Can not read Scientific from: \158")
 -- >>> runHabularaInVoid $ asDecimal (VText "語")
 -- Left (HabularaErrorRead "Can not read Scientific from: \232\170\158")
 -- >>> runHabularaInVoid $ asDecimal (VInt 42)
@@ -310,8 +270,6 @@ asDecimal x = decimal <$> fromValue x
 -- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asBoolean VEmpty
 -- Right (VBoolean False,())
--- >>> runHabularaInVoid $ asBoolean (VRaw "語")
--- Left (HabularaErrorRead "Can not read Boolean from: \158")
 -- >>> runHabularaInVoid $ asBoolean (VText "語")
 -- Left (HabularaErrorRead "Can not read Boolean from: \232\170\158")
 -- >>> runHabularaInVoid $ asBoolean (VInt 42)
@@ -335,8 +293,6 @@ asBoolean x = boolean <$> fromValue x
 -- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDate VEmpty
 -- Right (VDate 1858-11-17,())
--- >>> runHabularaInVoid $ asDate (VRaw "語")
--- Left (HabularaErrorRead "Can not read Date from: \158")
 -- >>> runHabularaInVoid $ asDate (VText "語")
 -- Left (HabularaErrorRead "Can not read Date from: \232\170\158")
 -- >>> runHabularaInVoid $ asDate (VInt 42)
@@ -360,8 +316,6 @@ asDate x = date <$> fromValue x
 -- >>> import Data.Habulara.Core.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDateTime VEmpty
 -- Right (VDateTime 1970-01-01 00:00:00,())
--- >>> runHabularaInVoid $ asDateTime (VRaw "語")
--- Left (HabularaErrorRead "Can not read LocalTime from: \158")
 -- >>> runHabularaInVoid $ asDateTime (VText "語")
 -- Left (HabularaErrorRead "Can not read LocalTime from: \232\170\158")
 -- >>> runHabularaInVoid $ asDateTime (VInt 42)

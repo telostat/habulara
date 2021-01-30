@@ -19,5 +19,4 @@ main = do
   quickCheck (withMaxSuccess 1000 (prop_monoidRightIdentity :: String -> Bool))
 
   -- Laws for NonEmpty:
-  quickCheck (prop_semigroupAssoc :: NonEmpty B.ByteString -> NonEmpty B.ByteString -> NonEmpty B.ByteString -> Bool)
   quickCheck (prop_semigroupAssoc :: NonEmpty T.Text -> NonEmpty T.Text -> NonEmpty T.Text -> Bool)

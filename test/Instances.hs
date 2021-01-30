@@ -15,10 +15,6 @@ import           Test.QuickCheck.Instances ()
 -- NON-EMPTY --
 ---------------
 
-instance Arbitrary (NonEmpty B.ByteString) where
-  -- TODO: Make sure that we produce Unicode characters, too.
-  arbitrary = MkNonEmpty . BC.pack <$> listOf1 (chr <$> choose (32, 126))
-
 
 instance Arbitrary (NonEmpty T.Text) where
   -- TODO: Make sure that we produce Unicode characters, too.
@@ -32,13 +28,12 @@ instance Arbitrary (NonEmpty T.Text) where
 
 instance Arbitrary Value where
   arbitrary = do
-    n <- choose (1, 8 :: Int)
+    n <- choose (1, 7 :: Int)
     case n of
       1 -> pure VEmpty
-      2 -> VRaw      <$> arbitrary
-      3 -> VText     <$> arbitrary
-      4 -> VInt      <$> arbitrary
-      5 -> VDecimal  <$> arbitrary
-      6 -> VBoolean  <$> arbitrary
-      7 -> VDate     <$> arbitrary
-      8 -> VDateTime <$> arbitrary
+      2 -> VText     <$> arbitrary
+      3 -> VInt      <$> arbitrary
+      4 -> VDecimal  <$> arbitrary
+      5 -> VBoolean  <$> arbitrary
+      6 -> VDate     <$> arbitrary
+      7 -> VDateTime <$> arbitrary

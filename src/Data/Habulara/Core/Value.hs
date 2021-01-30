@@ -30,7 +30,6 @@ import           Text.Read                   (readMaybe)
 -- | Habulara row record field value type.
 data Value =
     VEmpty
-  | VRaw      !(NEV.NonEmpty B.ByteString)
   | VText     !(NEV.NonEmpty T.Text)
   | VInt      !Integer
   | VDecimal  !Scientific
@@ -45,9 +44,9 @@ data Value =
 -- >>> "" :: Value
 -- VEmpty
 -- >>> "Hebele" :: Value
--- VRaw (MkNonEmpty {unpack = "Hebele"})
+-- VText (MkNonEmpty {unpack = "Hebele"})
 instance IsString Value where
-  fromString = toValue . BC.pack
+  fromString = toValue . T.pack
 
 
 -- | @cassava@ 'Csv.FromField' instance for 'Value' values.
@@ -55,11 +54,7 @@ instance IsString Value where
 -- We are parsing the CSV column into either of:
 --
 -- 1. 'VEmpty' if the column value is an empty 'B.ByteString', or
--- 2. 'VRaw' otherwise.
---
--- We have chosen 'VRaw' for efficiency reasons. Extra check for 'VEmpty' is a
--- cost but sounds worth to bear: We will not operate on empty values during
--- operations.
+-- 2. 'VText' otherwise.
 --
 -- See the underlying implementation in the 'Valuable' instance implementation
 -- 'fromByteString' for 'Value'.
@@ -67,13 +62,13 @@ instance IsString Value where
 -- >>> Cassava.runParser $ Cassava.parseField "" :: Either String Value
 -- Right VEmpty
 -- >>> Cassava.runParser $ Cassava.parseField " " :: Either String Value
--- Right (VRaw (MkNonEmpty {unpack = " "}))
+-- Right (VText (MkNonEmpty {unpack = " "}))
 -- >>> Cassava.runParser $ Cassava.parseField " a " :: Either String Value
--- Right (VRaw (MkNonEmpty {unpack = " a "}))
+-- Right (VText (MkNonEmpty {unpack = " a "}))
 -- >>> Cassava.runParser $ Cassava.parseField " 語 " :: Either String Value
--- Right (VRaw (MkNonEmpty {unpack = " \158 "}))
+-- *** Exception: Cannot decode byte '\x9e': Data.Text.Internal.Encoding.decodeUtf8: Invalid UTF-8 stream
 -- >>> Cassava.runParser $ Cassava.parseField " \t\r\n " :: Either String Value
--- Right (VRaw (MkNonEmpty {unpack = " \t\r\n "}))
+-- Right (VText (MkNonEmpty {unpack = " \t\r\n "}))
 instance Cassava.FromField Value where
   parseField = either (fail . show) pure . fromByteString
 
@@ -82,8 +77,6 @@ instance Cassava.FromField Value where
 --
 -- >>> Cassava.toField VEmpty
 -- ""
--- >>> Cassava.toField $ VRaw "語"
--- "\158"
 -- >>> Cassava.toField $ VInt 42
 -- "42"
 -- >>> Cassava.toField $ VText "Hello"
@@ -128,6 +121,14 @@ class (Eq a) => Valuable a where
   -- | Parses from a 'B.ByteString ('@cassava@ 'Csv.Field') value.
   fromByteString :: MonadError HabularaError m => B.ByteString -> m a
 
+  -- | Converts to a 'T.Text' value.
+  toText :: a -> T.Text
+  toText = TE.decodeUtf8 . toByteString
+
+  -- | Parses from a 'T.Text' value.
+  fromText :: MonadError HabularaError m => T.Text -> m a
+  fromText = fromByteString . TE.encodeUtf8
+
   -- | Provides a convenience function to throw a conversion error.
   raiseConversionError :: MonadError HabularaError m => String -> Value -> m a
   raiseConversionError t v = throwError . HabularaErrorValueConversion $ "Can not convert to " <> t <> ": " <> show v
@@ -155,7 +156,6 @@ instance Valuable Value where
   fromValue = pure
 
   toByteString VEmpty        = B.empty
-  toByteString (VRaw i)      = NEV.unpack i
   toByteString (VText t)     = toByteString $ NEV.unpack t
   toByteString (VInt i)      = toByteString i
   toByteString (VDecimal d)  = toByteString d
@@ -163,35 +163,7 @@ instance Valuable Value where
   toByteString (VDate d)     = toByteString d
   toByteString (VDateTime t) = toByteString t
 
-  fromByteString = pure . maybe VEmpty VRaw . NEV.nonEmpty
-
-
--- | 'Valuable' instance for @'NonEmpty' 'B.ByteString'@ type.
---
--- >>> toValue (" " :: NEV.NonEmpty B.ByteString)
--- VRaw (MkNonEmpty {unpack = " "})
--- >>> fromValue VEmpty :: Either HabularaError (NEV.NonEmpty T.Text)
--- Left (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value")
--- >>> fromValue (" " :: Value) :: Either HabularaError (NEV.NonEmpty B.ByteString)
--- Right (MkNonEmpty {unpack = " "})
--- >>> fromValue (VInt 1) :: Either HabularaError (NEV.NonEmpty B.ByteString)
--- Right (MkNonEmpty {unpack = "1"})
--- >>> toByteString (" " :: NEV.NonEmpty B.ByteString)
--- " "
--- >>> fromByteString " " :: Either HabularaError (NEV.NonEmpty B.ByteString)
--- Right (MkNonEmpty {unpack = " "})
--- >>> fromByteString "" :: Either HabularaError (NEV.NonEmpty B.ByteString)
--- Left (HabularaErrorValueConversion "Can not create 'NonEmpty ByteString' with empty value")
-instance Valuable (NEV.NonEmpty B.ByteString) where
-  identity = error "NonEmpty ByteString does not have identity value"
-
-  toValue = VRaw
-
-  fromValue = fromByteString . toByteString
-
-  toByteString = NEV.unpack
-
-  fromByteString = liftMaybe (HabularaErrorValueConversion "Can not create 'NonEmpty ByteString' with empty value") . NEV.nonEmpty
+  fromByteString = pure . maybe VEmpty VText . NEV.nonEmpty . TE.decodeUtf8
 
 
 -- | 'Valuable' instance for @'NonEmpty' 'T.Text'@ type.
@@ -222,38 +194,6 @@ instance Valuable (NEV.NonEmpty T.Text) where
   toByteString = toByteString . NEV.unpack
 
   fromByteString = fromByteString >=> liftMaybe (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value") . NEV.nonEmpty
-
-
--- | 'Valuable' instance for 'B.ByteString' type.
---
--- >>> toValue ("" :: B.ByteString)
--- VEmpty
--- >>> toValue (" " :: B.ByteString)
--- VRaw (MkNonEmpty {unpack = " "})
--- >>> toValue ("語" :: B.ByteString)
--- VRaw (MkNonEmpty {unpack = "\158"})
--- >>> fromValue VEmpty :: Either HabularaError B.ByteString
--- Right ""
--- >>> fromValue (VRaw " ") :: Either HabularaError B.ByteString
--- Right " "
--- >>> fromValue (VText " ") :: Either HabularaError B.ByteString
--- Right " "
--- >>> toByteString (VRaw " ")
--- " "
--- >>> fromByteString "" :: Either HabularaError B.ByteString
--- Right ""
--- >>> fromByteString " " :: Either HabularaError B.ByteString
--- Right " "
-instance Valuable B.ByteString where
-  identity = ""
-
-  toValue = maybe VEmpty VRaw . NEV.nonEmpty
-
-  fromValue = fromByteString . toByteString
-
-  toByteString = id
-
-  fromByteString = pure
 
 
 -- | 'Valuable' instance for 'T.Text' type.
@@ -297,10 +237,6 @@ instance Valuable T.Text where
 -- VInt 42
 -- >>> fromValue VEmpty :: Either HabularaError Integer
 -- Right 0
--- >>> fromValue (VRaw "1") :: Either HabularaError Integer
--- Right 1
--- >>> fromValue (VRaw "1a") :: Either HabularaError Integer
--- Left (HabularaErrorRead "Can not read Integer from: 1a")
 -- >>> fromValue (VText "1") :: Either HabularaError Integer
 -- Right 1
 -- >>> fromValue (VText "1a") :: Either HabularaError Integer
@@ -350,10 +286,6 @@ instance Valuable Integer where
 -- VDecimal 42.0
 -- >>> fromValue VEmpty :: Either HabularaError Scientific
 -- Right 0.0
--- >>> fromValue (VRaw "1") :: Either HabularaError Scientific
--- Right 1.0
--- >>> fromValue (VRaw "1a") :: Either HabularaError Scientific
--- Left (HabularaErrorRead "Can not read Scientific from: 1a")
 -- >>> fromValue (VText "1") :: Either HabularaError Scientific
 -- Right 1.0
 -- >>> fromValue (VText "1a") :: Either HabularaError Scientific
@@ -404,14 +336,6 @@ instance Valuable Scientific where
 -- >>> toValue False
 -- VBoolean False
 -- >>> fromValue VEmpty :: Either HabularaError Bool
--- Right False
--- >>> fromValue (VRaw "0") :: Either HabularaError Bool
--- Left (HabularaErrorRead "Can not read Boolean from: 0")
--- >>> fromValue (VRaw "1") :: Either HabularaError Bool
--- Left (HabularaErrorRead "Can not read Boolean from: 1")
--- >>> fromValue (VRaw "True") :: Either HabularaError Bool
--- Right True
--- >>> fromValue (VRaw "False") :: Either HabularaError Bool
 -- Right False
 -- >>> fromValue (VText "0") :: Either HabularaError Bool
 -- Left (HabularaErrorRead "Can not read Boolean from: 0")
@@ -476,10 +400,6 @@ instance Valuable Bool where
 -- VDate 2020-12-31
 -- >>> fromValue VEmpty :: Either HabularaError Day
 -- Right 1858-11-17
--- >>> fromValue (VRaw " ") :: Either HabularaError Day
--- Left (HabularaErrorRead "Can not read Date from:  ")
--- >>> fromValue (VRaw "2020-12-31") :: Either HabularaError Day
--- Right 2020-12-31
 -- >>> fromValue (VText " ") :: Either HabularaError Day
 -- Left (HabularaErrorRead "Can not read Date from:  ")
 -- >>> fromValue (VText "2020-12-31") :: Either HabularaError Day
@@ -534,18 +454,6 @@ instance Valuable Day where
 -- VDateTime 2020-12-31 23:59:59
 -- >>> fromValue VEmpty :: Either HabularaError LocalTime
 -- Right 1970-01-01 00:00:00
--- >>> fromValue (VRaw " ") :: Either HabularaError LocalTime
--- Left (HabularaErrorRead "Can not read LocalTime from:  ")
--- >>> fromValue (VRaw "2020-12-31 23:59:59") :: Either HabularaError LocalTime
--- Right 2020-12-31 23:59:59
--- >>> fromValue (VRaw "2020-12-31 23:59:59.000001") :: Either HabularaError LocalTime
--- Right 2020-12-31 23:59:59.000001
--- >>> fromValue (VRaw "2020-12-31 23:59:59.000000001") :: Either HabularaError LocalTime
--- Right 2020-12-31 23:59:59.000000001
--- >>> fromValue (VRaw "2020-12-31 23:59:59.000000000001") :: Either HabularaError LocalTime
--- Right 2020-12-31 23:59:59.000000000001
--- >>> fromValue (VRaw "2020-12-31 23:59:59.0000000000009") :: Either HabularaError LocalTime
--- Right 2020-12-31 23:59:59
 -- >>> fromValue (VText "2020-12-31 23:59:59") :: Either HabularaError LocalTime
 -- Right 2020-12-31 23:59:59
 -- >>> fromValue (VText "2020-12-31 23:59:59.000001") :: Either HabularaError LocalTime
