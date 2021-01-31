@@ -3,6 +3,7 @@
 --
 -- As a quick start:
 --
+--
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", "1")]) (1, HM.empty :: Record) (select "a" >>= asEmpty)
 -- Right (VEmpty,(1,fromList []))
@@ -14,18 +15,24 @@
 
 module Data.Habulara.Core.Operation where
 
-import           Control.Applicative             (Alternative((<|>)))
-import           Control.Monad.Except            (MonadError(throwError))
-import           Control.Monad.Reader            (MonadReader, asks)
-import           Control.Monad.State             (MonadState(get, put), gets)
-import           Data.Habulara.Core.Types.Class  (HabularaError(..), MonadHabulara, liftMaybe)
-import           Data.Habulara.Core.Types.Record (Label, Record)
-import           Data.Habulara.Core.Types.Value  (Valuable(..), Value(..))
-import qualified Data.HashMap.Strict             as HM
-import           Data.Scientific                 (Scientific)
-import qualified Data.Text                       as T
-import           Data.Time                       (Day, LocalTime)
-import           Prelude                         hiding (lookup)
+import           Control.Applicative               (Alternative((<|>)))
+import           Control.Monad.Except              (MonadError(throwError))
+import           Control.Monad.Reader              (MonadReader, asks)
+import           Control.Monad.State               (MonadState(get, put), gets)
+import           Data.Habulara.Core.Types.Class    (HabularaError(..), MonadHabulara, liftMaybe)
+import qualified Data.Habulara.Core.Types.NonEmpty as NEV
+import           Data.Habulara.Core.Types.Record   (Label, Record)
+import           Data.Habulara.Core.Types.Value    (Valuable(..), Value(..))
+import qualified Data.HashMap.Strict               as HM
+import           Data.Scientific                   (Scientific)
+import qualified Data.Text                         as T
+import           Data.Time                         (Day, LocalTime)
+import           Prelude                           hiding (lookup)
+
+
+-- $setup
+-- >>> import Data.Habulara.Core.Types.Class (runHabularaIO, runHabularaInVoid)
+
 
 -- * Types
 --
@@ -295,9 +302,85 @@ asText :: MonadError HabularaError m => Value -> m Value
 asText x = text <$> fromValue x
 
 
+-- * Value Subtype Guarded Operators
+--
+-- $ operatorsValueSubtypeGuards
+
+
+-- | Runs the action if the value is a 'VEmpty', raises error otherwise.
+--
+-- >>> runHabularaInVoid $ withEmpty (pure true) VEmpty
+-- Right (VBool True,())
+-- >>> runHabularaInVoid $ withEmpty (pure true) true
+-- Left (HabularaErrorOperation "Expecting 'VEmpty', recieved: VBool True")
+withEmpty :: MonadError HabularaError m => m a -> Value -> m a
+withEmpty a VEmpty = a
+withEmpty _ v      = raiseOperationTypeGuard "VEmpty" v
+
+
+-- | Runs the action if the value is a 'VBool', raises error otherwise.
+--
+-- >>> runHabularaInVoid $ withBool (\x -> pure $ if x then (text "Yes") else (text "No")) true
+-- Right (VText (MkNonEmpty {unpack = "Yes"}),())
+-- >>> runHabularaInVoid $ withBool (\x -> pure $ if x then (text "Yes") else (text "No")) false
+-- Right (VText (MkNonEmpty {unpack = "No"}),())
+-- >>> runHabularaInVoid $ withBool (\x -> pure $ if x then (text "Yes") else (text "No")) VEmpty
+-- Left (HabularaErrorOperation "Expecting 'VBool', recieved: VEmpty")
+withBool :: MonadError HabularaError m => (Bool -> m a) -> Value -> m a
+withBool f (VBool x) = f x
+withBool _ v         = raiseOperationTypeGuard "VBool" v
+
+
+-- | Runs the action if the value is a 'VDate', raises error otherwise.
+--
+-- >>> runHabularaInVoid $ withDate (\x -> pure $ "Today is " <> show x) (VDate $ read "2020-12-31")
+-- Right ("Today is 2020-12-31",())
+-- >>> runHabularaInVoid $ withDate (\x -> pure $ "Today is " <> show x) true
+-- Left (HabularaErrorOperation "Expecting 'VDate', recieved: VBool True")
+withDate :: MonadError HabularaError m => (Day -> m a) -> Value -> m a
+withDate f (VDate x) = f x
+withDate _ v         = raiseOperationTypeGuard "VDate" v
+
+
+-- | Runs the action if the value is a 'VTime', raises error otherwise.
+--
+-- >>> runHabularaInVoid $ withTime (\x -> pure $ "Now is " <> show x) (VTime $ read "2020-12-31 23:59:59")
+-- Right ("Now is 2020-12-31 23:59:59",())
+-- >>> runHabularaInVoid $ withTime (\x -> pure $ "Now is " <> show x) true
+-- Left (HabularaErrorOperation "Expecting 'VTime', recieved: VBool True")
+withTime :: MonadError HabularaError m => (LocalTime -> m a) -> Value -> m a
+withTime f (VTime x) = f x
+withTime _ v         = raiseOperationTypeGuard "VTime" v
+
+
+-- | Runs the action if the value is a 'VNumber', raises error otherwise.
+--
+-- >>> runHabularaInVoid $ withNumber (pure . (1 +)) (VNumber 42)
+-- Right (43.0,())
+-- >>> runHabularaInVoid $ withNumber (pure . (1 +)) true
+-- Left (HabularaErrorOperation "Expecting 'VNumber', recieved: VBool True")
+withNumber :: MonadError HabularaError m => (Scientific -> m a) -> Value -> m a
+withNumber f (VNumber x) = f x
+withNumber _ v           = raiseOperationTypeGuard "VNumber" v
+
+
+-- | Runs the action if the value is a 'VText', raises error otherwise.
+--
+-- >>> runHabularaInVoid $ withText (pure . ("Hello " <>)) "World"
+-- Right ("Hello World",())
+-- >>> runHabularaInVoid $ withText (pure . ("Hello " <>)) true
+-- Left (HabularaErrorOperation "Expecting 'VText', recieved: VBool True")
+-- >>> runHabularaIO (HM.fromList [("a", "A"), ("b", "B")]) () $ withText select "a"
+-- Right (VText (MkNonEmpty {unpack = "A"}),())
+withText :: MonadError HabularaError m => (T.Text -> m a) -> Value -> m a
+withText f (VText x) = f . NEV.unpack $ x
+withText _ v         = raiseOperationTypeGuard "VText" v
+
+
 -- * Helpers
 --
 -- $helpers
+
 
 -- | Attempts to find the value associated with the given label in the operation
 -- environment and applies the given function to it.
@@ -331,3 +414,8 @@ modifyRecord f = get >>= (\(c, r) -> put (c, f r))
 -- | Convenience function for throwing operation errors.
 raiseOperationError :: MonadError HabularaError m => T.Text -> m a
 raiseOperationError = throwError . HabularaErrorOperation
+
+
+-- | Raises a 'HabularaError' indicating that expected type and actual type are differing.
+raiseOperationTypeGuard :: MonadError HabularaError m => String -> Value -> m a
+raiseOperationTypeGuard expected actual = raiseOperationError . T.pack $ "Expecting '" <> expected <> "', recieved: " <> show actual
