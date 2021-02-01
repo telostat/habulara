@@ -24,10 +24,11 @@ import qualified Data.Habulara.Core.Types.NonEmpty as NEV
 import           Data.Habulara.Core.Types.Record   (Label, Record)
 import           Data.Habulara.Core.Types.Value    (Valuable(..), Value(..))
 import qualified Data.HashMap.Strict               as HM
+import           Data.Maybe                        (fromMaybe)
 import           Data.Scientific                   (Scientific, toRealFloat)
 import qualified Data.Text                         as T
 import           Data.Time                         (Day, LocalTime)
-import           Prelude                           hiding (lookup, subtract)
+import           Prelude                           hiding (drop, lookup, subtract, take)
 
 
 -- $setup
@@ -434,6 +435,228 @@ percentage :: MonadError HabularaError m => Value -> m Value
 percentage = unaryOperation withNumber (liftNumber . (*) 100)
 
 
+-- * Textual Operators
+--
+-- $operatorsTextual
+
+
+-- | Strips whitespace from the beginning and end of a textual value.
+--
+-- >>> runHabularaInVoid $ trim " "
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ trim " a"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ trim "a "
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ trim " a "
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ trim " \t\r\n a \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ trim " a b "
+-- Right (VText (MkNonEmpty {unpack = "a b"}),())
+-- >>> runHabularaInVoid $ trim " a  b "
+-- Right (VText (MkNonEmpty {unpack = "a  b"}),())
+-- >>> runHabularaInVoid $ trim "\t\r\n a \t\r\n b \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a \t\r\n b"}),())
+trim :: MonadError HabularaError m => Value -> m Value
+trim = unaryOperation withText (liftText . T.strip)
+
+
+-- | Strips whitespace from the beginning of a textual value.
+--
+-- >>> runHabularaInVoid $ trimStart " "
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ trimStart " a"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ trimStart "a "
+-- Right (VText (MkNonEmpty {unpack = "a "}),())
+-- >>> runHabularaInVoid $ trimStart " a "
+-- Right (VText (MkNonEmpty {unpack = "a "}),())
+-- >>> runHabularaInVoid $ trimStart " \t\r\n a \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a \t\r\n "}),())
+-- >>> runHabularaInVoid $ trimStart " a b "
+-- Right (VText (MkNonEmpty {unpack = "a b "}),())
+-- >>> runHabularaInVoid $ trimStart " a  b "
+-- Right (VText (MkNonEmpty {unpack = "a  b "}),())
+-- >>> runHabularaInVoid $ trimStart "\t\r\n a \t\r\n b \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a \t\r\n b \t\r\n "}),())
+trimStart :: MonadError HabularaError m => Value -> m Value
+trimStart = unaryOperation withText (liftText . T.stripStart)
+
+
+-- | Strips whitespace from the end of a textual value.
+--
+-- >>> runHabularaInVoid $ trimEnd " "
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ trimEnd " a"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ trimEnd "a "
+-- Right (VText (MkNonEmpty {unpack = "a "}),())
+-- >>> runHabularaInVoid $ trimEnd " a "
+-- Right (VText (MkNonEmpty {unpack = "a "}),())
+-- >>> runHabularaInVoid $ trimEnd " \t\r\n a \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a \t\r\n "}),())
+-- >>> runHabularaInVoid $ trimEnd " a b "
+-- Right (VText (MkNonEmpty {unpack = "a b "}),())
+-- >>> runHabularaInVoid $ trimEnd " a  b "
+-- Right (VText (MkNonEmpty {unpack = "a  b "}),())
+-- >>> runHabularaInVoid $ trimEnd "\t\r\n a \t\r\n b \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a \t\r\n b \t\r\n "}),())
+trimEnd :: MonadError HabularaError m => Value -> m Value
+trimEnd = unaryOperation withText (liftText . T.stripStart)
+
+
+-- | Sanitizes a given text.
+--
+-- 1. Removes leading= and trailing whitespace.
+-- 2. Replaces consecutive whitespace with a single space character.
+--
+-- >>> runHabularaInVoid $ sanitize " "
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ sanitize " a"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ sanitize "a "
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ sanitize " a "
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ sanitize " \t\r\n a \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ sanitize " a b "
+-- Right (VText (MkNonEmpty {unpack = "a b"}),())
+-- >>> runHabularaInVoid $ sanitize " a  b "
+-- Right (VText (MkNonEmpty {unpack = "a b"}),())
+-- >>> runHabularaInVoid $ sanitize "\t\r\n a \t\r\n b \t\r\n "
+-- Right (VText (MkNonEmpty {unpack = "a b"}),())
+sanitize :: MonadError HabularaError m => Value -> m Value
+sanitize = unaryOperation withText (liftText . T.unwords . T.words)
+
+
+-- | Lowercases given text.
+--
+-- >>> runHabularaInVoid $ lower "a"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ lower "A"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ lower "aA"
+-- Right (VText (MkNonEmpty {unpack = "aa"}),())
+lower :: MonadError HabularaError m => Value -> m Value
+lower = unaryOperation withText (liftText . T.toLower)
+
+
+-- | Uppercases given text.
+--
+-- >>> runHabularaInVoid $ upper "a"
+-- Right (VText (MkNonEmpty {unpack = "A"}),())
+-- >>> runHabularaInVoid $ upper "A"
+-- Right (VText (MkNonEmpty {unpack = "A"}),())
+-- >>> runHabularaInVoid $ upper "aA"
+-- Right (VText (MkNonEmpty {unpack = "AA"}),())
+upper :: MonadError HabularaError m => Value -> m Value
+upper = unaryOperation withText (liftText . T.toUpper)
+
+
+-- | Capitalizes given text.
+--
+-- >>> runHabularaInVoid $ capitalize "a"
+-- Right (VText (MkNonEmpty {unpack = "A"}),())
+-- >>> runHabularaInVoid $ capitalize "A"
+-- Right (VText (MkNonEmpty {unpack = "A"}),())
+-- >>> runHabularaInVoid $ capitalize "aA"
+-- Right (VText (MkNonEmpty {unpack = "Aa"}),())
+-- >>> runHabularaInVoid $ capitalize "aA aA"
+-- Right (VText (MkNonEmpty {unpack = "Aa Aa"}),())
+capitalize :: MonadError HabularaError m => Value -> m Value
+capitalize = unaryOperation withText (liftText . T.toTitle)
+
+
+-- | Appends second value to the first one.
+--
+-- >>> runHabularaInVoid $ append "a" "b"
+-- Right (VText (MkNonEmpty {unpack = "ab"}),())
+append :: MonadError HabularaError m => Value -> Value -> m Value
+append = binaryOperation withText (\x y -> liftText $ (<>) x y)
+
+
+-- | Appends first value to the second one.
+--
+-- >>> runHabularaInVoid $ prepend "a" "b"
+-- Right (VText (MkNonEmpty {unpack = "ba"}),())
+prepend :: MonadError HabularaError m => Value -> Value -> m Value
+prepend = flip append
+
+
+-- | Takes first @n@ characters of a given text.
+--
+-- >>> runHabularaInVoid $ take (number 0) "123456789"
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ take (number 1) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "1"}),())
+-- >>> runHabularaInVoid $ take (number 2) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "12"}),())
+-- >>> runHabularaInVoid $ take (number 100) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "123456789"}),())
+take :: MonadError HabularaError m => Value -> Value -> m Value
+take x y = withNumber (\n -> withText (liftText . T.take (fromIntegral (floor n :: Integer))) y) x
+
+
+-- | Takes last @n@ characters of a given text.
+--
+-- >>> runHabularaInVoid $ takeEnd (number 0) "123456789"
+-- Right (VEmpty,())
+-- >>> runHabularaInVoid $ takeEnd (number 1) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "9"}),())
+-- >>> runHabularaInVoid $ takeEnd (number 2) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "89"}),())
+-- >>> runHabularaInVoid $ takeEnd (number 100) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "123456789"}),())
+takeEnd :: MonadError HabularaError m => Value -> Value -> m Value
+takeEnd x y = withNumber (\n -> withText (liftText . T.takeEnd (fromIntegral (floor n :: Integer))) y) x
+
+
+-- | Drops first @n@ characters of a given text.
+--
+-- >>> runHabularaInVoid $ drop (number 0) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "123456789"}),())
+-- >>> runHabularaInVoid $ drop (number 1) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "23456789"}),())
+-- >>> runHabularaInVoid $ drop (number 2) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "3456789"}),())
+-- >>> runHabularaInVoid $ drop (number 100) "123456789"
+-- Right (VEmpty,())
+drop :: MonadError HabularaError m => Value -> Value -> m Value
+drop x y = withNumber (\n -> withText (liftText . T.drop (fromIntegral (floor n :: Integer))) y) x
+
+
+-- | Drops last @n@ characters of a given text.
+--
+-- >>> runHabularaInVoid $ dropEnd (number 0) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "123456789"}),())
+-- >>> runHabularaInVoid $ dropEnd (number 1) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "12345678"}),())
+-- >>> runHabularaInVoid $ dropEnd (number 2) "123456789"
+-- Right (VText (MkNonEmpty {unpack = "1234567"}),())
+-- >>> runHabularaInVoid $ dropEnd (number 100) "123456789"
+-- Right (VEmpty,())
+dropEnd :: MonadError HabularaError m => Value -> Value -> m Value
+dropEnd x y = withNumber (\n -> withText (liftText . T.dropEnd (fromIntegral (floor n :: Integer))) y) x
+
+
+-- | Splits a given text by a given text and returns the element at the given index.
+--
+-- >>> runHabularaInVoid $ splitIx (number 0) "," "a,b,c"
+-- Right (VText (MkNonEmpty {unpack = "a"}),())
+-- >>> runHabularaInVoid $ splitIx (number 1) "," "a,b,c"
+-- Right (VText (MkNonEmpty {unpack = "b"}),())
+-- >>> runHabularaInVoid $ splitIx (number 2) "," "a,b,c"
+-- Right (VText (MkNonEmpty {unpack = "c"}),())
+-- >>> runHabularaInVoid $ splitIx (number 3) "," "a,b,c"
+-- Right (VEmpty,())
+splitIx :: MonadError HabularaError m => Value -> Value -> Value -> m Value
+splitIx n x y = withNumber (\i -> withText (\s -> withText (liftText . attempt i s) y) x) n
+  where
+    attempt i s t = fromMaybe "" $ at (floor i) (T.splitOn s t)
+
+
 -- * Helpers
 --
 -- $helpers
@@ -516,3 +739,28 @@ raiseOperationError = throwError . HabularaErrorOperation
 -- | Raises a 'HabularaError' indicating that expected type and actual type are differing.
 raiseOperationTypeGuard :: MonadError HabularaError m => String -> Value -> m a
 raiseOperationTypeGuard expected actual = raiseOperationError . T.pack $ "Expecting '" <> expected <> "', recieved: " <> show actual
+
+
+-- * Utils
+--
+-- $utils
+
+
+-- | Attempts to find the element in a given list that is at the given index.
+--
+-- >>> at 0 ""
+-- Nothing
+-- >>> at 1 ""
+-- Nothing
+-- >>> at (-1) ""
+-- Nothing
+-- >>> at 0 "0123456789"
+-- Just '0'
+-- >>> at 1 "0123456789"
+-- Just '1'
+-- >>> at 2 "0123456789"
+-- Just '2'
+at :: Integer -> [a] -> Maybe a
+at _ []     = Nothing
+at 0 (x:_)  = Just x
+at n (_:xs) = at (n - 1) xs
