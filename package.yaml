@@ -22,21 +22,15 @@ flags:
 
 dependencies:
 - base >= 4.7 && < 5
-- aeson
 - bytestring
 - cassava
 - conduit
-- containers
-- iconv
 - mtl
-- profunctors
 - scientific
-- string-interpolate
 - text
 - time
 - unordered-containers
 - vector
-- yaml
 
 library:
   source-dirs: src
