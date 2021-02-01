@@ -5,13 +5,41 @@
 
 module Data.Habulara.Core.Mapping where
 
-import           Control.Monad.Except            (MonadError(throwError))
-import           Control.Monad.State             (MonadIO(..), gets)
-import           Data.Habulara.Core.Operation    (Operation, OperationEnvar, OperationState, modifyRecord)
-import           Data.Habulara.Core.Types.Class  (HabularaT, MonadHabulara, runHabularaT)
-import           Data.Habulara.Core.Types.Record (Label, Record)
-import           Data.Habulara.Core.Types.Value  (Value)
-import qualified Data.HashMap.Strict             as HM
+import           Control.Monad.Except       (MonadError(throwError))
+import           Control.Monad.IO.Class     (MonadIO(..))
+import           Control.Monad.Reader       (MonadReader)
+import           Control.Monad.Reader.Class (asks)
+import           Control.Monad.State        (MonadState(..), gets)
+import           Data.Habulara.Core         (HabularaT, Label, MonadHabulara, Record, Value, runHabularaT)
+import qualified Data.HashMap.Strict        as HM
+
+-- * Types
+--
+-- In essence, an operation is defined in a 'MonadHabulara' context
+-- ('Operation') with a raw 'Record' as the environment variable
+-- ('OperationEnvar') and a 2-tuple of (1) current row number and (2) the buffer
+-- 'Record' being built up ('OperationState').
+--
+-- $types
+
+
+-- | Environment type for 'Operation'.
+--
+-- This is the raw row record as the input to the current operation.
+type OperationEnvar = Record
+
+
+-- | State type for 'Operator'.
+--
+-- This is a 2-tuple of:
+--
+-- 1. Current row number in operation, and
+-- 2. Current buffer record being built up.
+type OperationState = (Integer, Record)
+
+
+-- | 'MonadHabulara' constraint for operations.
+type Operation m = MonadHabulara OperationEnvar OperationState m
 
 
 -- | High-level operator type based on 'HabularaM'.
@@ -32,6 +60,11 @@ type FieldOperator = (Label, Operator)
 --
 -- We are keeping the __current__ row number as the state.
 type MappingM m = MonadHabulara () Integer m
+
+
+-- * Mapping
+--
+-- $mapping
 
 
 -- | Maps a 'Record' to a 'Record' as per given 'FieldOperator's (field label -
@@ -57,3 +90,37 @@ mapRecord ops record = do
 buildRecord :: Operation m => [(Label, m Value)] -> m Record
 buildRecord []                  = gets snd
 buildRecord ((name, prog) : xs) = prog >>= modifyRecord . HM.insert name >> buildRecord xs
+
+
+-- * Helpers
+--
+-- $helpers
+
+
+-- | Attempts to find the value associated with the given label in the operation
+-- environment and applies the given function to it.
+asksLabel :: MonadReader OperationEnvar m => Label -> (Value -> a) -> m (Maybe a)
+asksLabel l f = asks (fmap f . HM.lookup l)
+
+
+-- | Attempts to find the value associated with the given label in the operation
+-- environment.
+askLabel :: MonadReader OperationEnvar m => Label -> m (Maybe Value)
+askLabel l = asksLabel l id
+
+
+-- | Attempts to find the value associated with the given label in the state
+-- buffer record and applies the given function to it.
+getsLabel :: MonadState OperationState m => Label -> (Value -> a) -> m (Maybe a)
+getsLabel l f = gets (fmap f . HM.lookup l . snd)
+
+
+-- | Attempts to find the value associated with the given label in the state
+-- buffer record.
+getLabel :: MonadState OperationState m => Label -> m (Maybe Value)
+getLabel l = getsLabel l id
+
+
+-- | Modifies the operation state buffer record.
+modifyRecord :: MonadState OperationState m => (Record -> Record) -> m ()
+modifyRecord f = get >>= (\(c, r) -> put (c, f r))

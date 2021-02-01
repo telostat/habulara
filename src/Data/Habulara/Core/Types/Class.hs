@@ -14,6 +14,10 @@ import qualified Data.Text              as T
 import           System.IO              (hPutStrLn, stderr)
 
 
+-- * Error Type
+--
+-- $errorType
+
 -- | Habulara error type.
 --
 -- __Note[vst]:__ Do we want to make the 'HabularaError' extensible? This will
@@ -26,6 +30,16 @@ data HabularaError =
   | HabularaErrorSimple T.Text
   | HabularaErrorValueConversion String
   deriving Show
+
+
+-- * Monad
+--
+-- $monad
+
+
+-- ** Definition
+--
+-- $monadDefinition
 
 
 -- | Core 'Monad' for Habulara programs.
@@ -41,6 +55,11 @@ class ( Functor m
 
   -- | Logs a debug message.
   debug :: T.Text -> m ()
+
+
+-- ** Instance
+--
+-- $monadInstance
 
 
 -- | Habulara monad based on a transformer stack.
@@ -68,6 +87,10 @@ instance (Monad m) => MonadPlus (HabularaT r s m) where
 instance (MonadIO m) => (MonadHabulara r s) (HabularaT r s m) where
   debug = liftIO . hPutStrLn stderr . T.unpack
 
+
+-- ** Runners
+--
+-- $monadRunners
 
 -- | Runs a 'HabularaT' in the given environement @r@ with the given initial
 -- state @s@.

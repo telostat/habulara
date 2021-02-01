@@ -152,12 +152,12 @@ instance Valuable Value where
 
   fromValue = pure
 
-  toByteString VEmpty        = B.empty
-  toByteString (VText t)     = toByteString $ NEV.unpack t
-  toByteString (VNumber d)   = toByteString d
-  toByteString (VBool b)     = toByteString b
-  toByteString (VDate d)     = toByteString d
-  toByteString (VTime t) = toByteString t
+  toByteString VEmpty      = B.empty
+  toByteString (VText t)   = toByteString $ NEV.unpack t
+  toByteString (VNumber d) = toByteString d
+  toByteString (VBool b)   = toByteString b
+  toByteString (VDate d)   = toByteString d
+  toByteString (VTime t)   = toByteString t
 
   fromByteString = pure . maybe VEmpty VText . NEV.nonEmpty . TE.decodeUtf8
 
@@ -261,7 +261,7 @@ instance Valuable Scientific where
   fromValue (VBool False) = pure 0
   fromValue (VBool True)  = pure 1
   fromValue (VDate x)     = pure . fromIntegral . toModifiedJulianDay $ x
-  fromValue (VTime x) = pure . realToFrac $ epoch x
+  fromValue (VTime x)     = pure . realToFrac $ epoch x
   fromValue v             = fromByteString . toByteString $ v
 
   toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
@@ -314,12 +314,12 @@ instance Valuable Bool where
 
   toValue = VBool
 
-  fromValue VEmpty          = pure identity
-  fromValue (VNumber x)     = pure $ x /= 0
-  fromValue (VBool x)       = pure x
-  fromValue x@(VDate _)     = raiseConversionError "Boolean" x
+  fromValue VEmpty      = pure identity
+  fromValue (VNumber x) = pure $ x /= 0
+  fromValue (VBool x)   = pure x
+  fromValue x@(VDate _) = raiseConversionError "Boolean" x
   fromValue x@(VTime _) = raiseConversionError "Boolean" x
-  fromValue v               = fromByteString . toByteString $ v
+  fromValue v           = fromByteString . toByteString $ v
 
   toByteString True  = "True"
   toByteString False = "False"
@@ -362,12 +362,12 @@ instance Valuable Day where
 
   toValue = VDate
 
-  fromValue VEmpty        = pure identity
-  fromValue (VNumber x)   = pure . ModifiedJulianDay . floor $ x
-  fromValue x@(VBool _)   = raiseConversionError "Date" x
-  fromValue (VDate x)     = pure x
-  fromValue (VTime x) = pure . localDay $ x
-  fromValue v             = fromByteString . toByteString $ v
+  fromValue VEmpty      = pure identity
+  fromValue (VNumber x) = pure . ModifiedJulianDay . floor $ x
+  fromValue x@(VBool _) = raiseConversionError "Date" x
+  fromValue (VDate x)   = pure x
+  fromValue (VTime x)   = pure . localDay $ x
+  fromValue v           = fromByteString . toByteString $ v
 
   toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
@@ -425,12 +425,12 @@ instance Valuable LocalTime where
 
   toValue = VTime
 
-  fromValue VEmpty         = pure identity
-  fromValue (VNumber x)   = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
+  fromValue VEmpty      = pure identity
+  fromValue (VNumber x) = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
   fromValue x@(VBool _) = raiseConversionError "LocalTime" x
-  fromValue (VDate x)      = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
-  fromValue (VTime x)  = pure x
-  fromValue v              = fromByteString . toByteString $ v
+  fromValue (VDate x)   = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
+  fromValue (VTime x)   = pure x
+  fromValue v           = fromByteString . toByteString $ v
 
   toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 

@@ -3,7 +3,6 @@
 --
 -- As a quick start:
 --
---
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", "1")]) (1, HM.empty :: Record) (select "a" >>= asEmpty)
 -- Right (VEmpty,(1,fromList []))
@@ -16,14 +15,13 @@
 module Data.Habulara.Core.Operation where
 
 import           Control.Applicative               (Alternative((<|>)))
-import           Control.Monad.Except              (MonadError(throwError))
-import           Control.Monad.Reader              (MonadReader, asks)
-import           Control.Monad.State               (MonadState(get, put), gets)
-import           Data.Habulara.Core.Types.Class    (HabularaError(..), MonadHabulara, liftMaybe)
+import           Control.Monad.Except              (MonadError(..))
+import           Control.Monad.Reader              (MonadReader)
+import           Control.Monad.State               (MonadState)
+import           Data.Habulara.Core.Mapping        (OperationEnvar, OperationState, askLabel, getLabel)
+import           Data.Habulara.Core.Types.Class    (HabularaError(..), liftMaybe)
 import qualified Data.Habulara.Core.Types.NonEmpty as NEV
-import           Data.Habulara.Core.Types.Record   (Label, Record)
 import           Data.Habulara.Core.Types.Value    (Valuable(..), Value(..))
-import qualified Data.HashMap.Strict               as HM
 import           Data.Maybe                        (fromMaybe)
 import           Data.Scientific                   (Scientific, toRealFloat)
 import qualified Data.Text                         as T
@@ -33,45 +31,14 @@ import           Data.Time.Format                  (defaultTimeLocale)
 import           Prelude                           hiding (and, drop, lookup, not, or, subtract, take)
 import qualified Prelude
 
+
 -- $setup
--- >>> import Data.Habulara.Core.Types.Class (runHabularaIO, runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Class  (runHabularaIO, runHabularaInVoid)
+-- >>> import Data.Habulara.Core.Types.Record (Record)
+-- >>> import qualified Data.HashMap.Strict   as HM
 
 
--- * Types
---
--- $types
---
--- In essence, an operation is defined in a 'MonadHabulara' context
--- ('Operation') with a raw 'Record' as the environment variable
--- ('OperationEnvar') and a 2-tuple of (1) current row number and (2) the buffer
--- 'Record' being built up ('OperationState').
-
-
--- | Environment type for 'Operation'.
---
--- This is the raw row record as the input to the current operation.
-type OperationEnvar = Record
-
-
--- | State type for 'Operator'.
---
--- This is a 2-tuple of:
---
--- 1. Current row number in operation, and
--- 2. Current buffer record being built up.
-type OperationState = (Integer, Record)
-
-
--- | 'MonadHabulara' constraint for operations.
-type Operation m = MonadHabulara OperationEnvar OperationState m
-
-
--- * Operations
---
--- $operations
-
-
--- ** Field Accessors
+-- * Field Accessors
 --
 -- These operations are essential in that they allow accessing raw record or
 -- buffer record field values.
@@ -84,7 +51,6 @@ type Operation m = MonadHabulara OperationEnvar OperationState m
 --
 -- If the label does not exist in the record, 'VEmpty' is returned.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "a")
 -- Right (VEmpty,(1,fromList []))
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "b")
@@ -99,7 +65,6 @@ lookup s = select s <|> pure VEmpty
 -- Similar to 'lookup' but if the label does not exist in the record,
 -- 'HabularaErrorOperation' is raised instead.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "a")
 -- Right (VEmpty,(1,fromList []))
 -- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "b")
@@ -114,7 +79,6 @@ select s = askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find reco
 -- If the label does not exist in the state buffer record,
 -- 'HabularaErrorOperation' is raised instead.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaIO)
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "a")
 -- Right (VText (MkNonEmpty {unpack = "A"}),(1,fromList [("a",VText (MkNonEmpty {unpack = "A"}))]))
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "b")
@@ -123,7 +87,7 @@ peek :: (MonadState OperationState m, MonadError HabularaError m) => T.Text -> m
 peek s = getLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find buffer record field with label: " <> s)
 
 
--- ** Value Constructors
+-- * Value Constructors
 --
 -- These operations are primitives for 'Value' construction.
 --
@@ -182,7 +146,7 @@ text :: T.Text -> Value
 text = toValue
 
 
--- ** Value Converters
+-- * Value Converters
 --
 -- These operations are primitives for 'Value' conversions.
 --
@@ -191,7 +155,6 @@ text = toValue
 
 -- | Converts the value to a 'VEmpty' value.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asEmpty VEmpty
 -- Right (VEmpty,())
 -- >>> runHabularaInVoid $ asEmpty (text " ")
@@ -202,7 +165,6 @@ asEmpty = pure . const VEmpty
 
 -- | Attempts to convert the given 'Value' to a 'VBool' value.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asBool VEmpty
 -- Right (VBool False,())
 -- >>> runHabularaInVoid $ asBool (VText "語")
@@ -223,7 +185,6 @@ asBool x = bool <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VDate' value.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asDate VEmpty
 -- Right (VDate 1858-11-17,())
 -- >>> runHabularaInVoid $ asDate (VText "語")
@@ -244,7 +205,6 @@ asDate x = date <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VTime' value.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asTime VEmpty
 -- Right (VTime 1970-01-01 00:00:00,())
 -- >>> runHabularaInVoid $ asTime (VText "語")
@@ -265,7 +225,6 @@ asTime x = time <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VNumber' value.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asNumber VEmpty
 -- Right (VNumber 0.0,())
 -- >>> runHabularaInVoid $ asNumber (VText "語")
@@ -286,7 +245,6 @@ asNumber x = number <$> fromValue x
 
 -- | Attempts to convert the given 'Value' to a 'VText' value.
 --
--- >>> import Data.Habulara.Core.Types.Class (runHabularaInVoid)
 -- >>> runHabularaInVoid $ asText VEmpty
 -- Right (VEmpty,())
 -- >>> runHabularaInVoid $ asText (VText "語")
@@ -827,45 +785,6 @@ liftText :: Monad m => T.Text -> m Value
 liftText = liftWith text
 
 
--- | Attempts to find the value associated with the given label in the operation
--- environment and applies the given function to it.
-asksLabel :: MonadReader OperationEnvar m => Label -> (Value -> a) -> m (Maybe a)
-asksLabel l f = asks (fmap f . HM.lookup l)
-
-
--- | Attempts to find the value associated with the given label in the operation
--- environment.
-askLabel :: MonadReader OperationEnvar m => Label -> m (Maybe Value)
-askLabel l = asksLabel l id
-
-
--- | Attempts to find the value associated with the given label in the state
--- buffer record and applies the given function to it.
-getsLabel :: MonadState OperationState m => Label -> (Value -> a) -> m (Maybe a)
-getsLabel l f = gets (fmap f . HM.lookup l . snd)
-
-
--- | Attempts to find the value associated with the given label in the state
--- buffer record.
-getLabel :: MonadState OperationState m => Label -> m (Maybe Value)
-getLabel l = getsLabel l id
-
-
--- | Modifies the operation state buffer record.
-modifyRecord :: MonadState OperationState m => (Record -> Record) -> m ()
-modifyRecord f = get >>= (\(c, r) -> put (c, f r))
-
-
--- | Convenience function for throwing operation errors.
-raiseOperationError :: MonadError HabularaError m => T.Text -> m a
-raiseOperationError = throwError . HabularaErrorOperation
-
-
--- | Raises a 'HabularaError' indicating that expected type and actual type are differing.
-raiseOperationTypeGuard :: MonadError HabularaError m => String -> Value -> m a
-raiseOperationTypeGuard expected actual = raiseOperationError . T.pack $ "Expecting '" <> expected <> "', recieved: " <> show actual
-
-
 -- * Utils
 --
 -- $utils
@@ -889,3 +808,13 @@ at :: Integer -> [a] -> Maybe a
 at _ []     = Nothing
 at 0 (x:_)  = Just x
 at n (_:xs) = at (n - 1) xs
+
+
+-- | Convenience function for throwing operation errors.
+raiseOperationError :: MonadError HabularaError m => T.Text -> m a
+raiseOperationError = throwError . HabularaErrorOperation
+
+
+-- | Raises a 'HabularaError' indicating that expected type and actual type are differing.
+raiseOperationTypeGuard :: MonadError HabularaError m => String -> Value -> m a
+raiseOperationTypeGuard expected actual = raiseOperationError . T.pack $ "Expecting '" <> expected <> "', recieved: " <> show actual
