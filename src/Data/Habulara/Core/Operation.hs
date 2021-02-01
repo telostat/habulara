@@ -24,10 +24,10 @@ import qualified Data.Habulara.Core.Types.NonEmpty as NEV
 import           Data.Habulara.Core.Types.Record   (Label, Record)
 import           Data.Habulara.Core.Types.Value    (Valuable(..), Value(..))
 import qualified Data.HashMap.Strict               as HM
-import           Data.Scientific                   (Scientific)
+import           Data.Scientific                   (Scientific, toRealFloat)
 import qualified Data.Text                         as T
 import           Data.Time                         (Day, LocalTime)
-import           Prelude                           hiding (lookup)
+import           Prelude                           hiding (lookup, subtract)
 
 
 -- $setup
@@ -377,9 +377,106 @@ withText f (VText x) = f . NEV.unpack $ x
 withText _ v         = raiseOperationTypeGuard "VText" v
 
 
+-- * Numeric Operators
+--
+-- $operatorsNumeric
+
+
+-- | Addition operation.
+--
+-- >>> runHabularaInVoid $ add (VNumber 41) (VNumber 1)
+-- Right (VNumber 42.0,())
+add :: MonadError HabularaError m => Value -> Value -> m Value
+add = binaryOperation withNumber (\x y -> liftNumber $ (+) x y)
+
+
+-- | Subtraction operation.
+--
+-- >>> runHabularaInVoid $ subtract (VNumber 43) (VNumber 1)
+-- Right (VNumber 42.0,())
+-- >>> runHabularaInVoid $ flip subtract (VNumber 43) (VNumber 1)
+-- Right (VNumber -42.0,())
+subtract :: MonadError HabularaError m => Value -> Value -> m Value
+subtract = binaryOperation withNumber (\x y -> liftNumber $ (-) x y)
+
+
+-- | Multiplication operation.
+--
+-- >>> runHabularaInVoid $ multiply (VNumber 6) (VNumber 7)
+-- Right (VNumber 42.0,())
+multiply :: MonadError HabularaError m => Value -> Value -> m Value
+multiply = binaryOperation withNumber (\x y -> liftNumber $ (*) x y)
+
+
+-- | Division operation.
+--
+-- >>> runHabularaInVoid $ divide (VNumber 84) (VNumber 2)
+-- Right (VNumber 42.0,())
+-- >>> runHabularaInVoid $ flip divide (VNumber 84) (VNumber 2)
+-- Right (VNumber 2.3809523809523808e-2,())
+divide :: MonadError HabularaError m => Value -> Value -> m Value
+divide = binaryOperation withNumber (\x y -> liftNumber $ floatingDiv x y)
+  where
+    floatingDiv :: Scientific -> Scientific -> Scientific  -- TODO: Find a better solution
+    floatingDiv x y = read . show $ (toRealFloat x :: Double) / (toRealFloat y :: Double)
+
+
+-- | Converts a number to percentage points.
+-- >>> runHabularaInVoid $ percentage (VNumber 0)
+-- Right (VNumber 0.0,())
+-- >>> runHabularaInVoid $ percentage (VNumber 0.5)
+-- Right (VNumber 50.0,())
+-- >>> runHabularaInVoid $ percentage (VNumber 1)
+-- Right (VNumber 100.0,())
+-- >>> runHabularaInVoid $ percentage true
+-- Left (HabularaErrorOperation "Expecting 'VNumber', recieved: VBool True")
+percentage :: MonadError HabularaError m => Value -> m Value
+percentage = unaryOperation withNumber (liftNumber . (*) 100)
+
+
 -- * Helpers
 --
 -- $helpers
+
+
+-- | Provides a unary operation template.
+unaryOperation :: MonadError HabularaError m => ((a -> m b) -> Value -> m b) ->  (a -> m b) -> Value -> m b
+unaryOperation g = g
+
+
+-- | Provides a binary operation template.
+binaryOperation :: MonadError HabularaError m => ((a -> m b) -> Value -> m b) ->  (a -> a -> m b) -> Value -> Value -> m b
+binaryOperation g f x y = g (\a -> g (f a) y) x
+
+
+-- | Lifts a value into a Value in a monadic context.
+liftWith :: Monad m => (a -> Value) -> a -> m Value
+liftWith f = pure . f
+
+
+-- | Lifts a 'Bool' into a Value in a monadic context.
+liftBool :: Monad m => Bool -> m Value
+liftBool = liftWith VBool
+
+
+-- | Lifts a 'Day' into a Value in a monadic context.
+liftDate :: Monad m => Day -> m Value
+liftDate = liftWith VDate
+
+
+-- | Lifts a 'LocalTime' into a Value in a monadic context.
+liftTime :: Monad m => LocalTime -> m Value
+liftTime = liftWith VTime
+
+
+-- | Lifts a 'Scientific' into a Value in a monadic context.
+liftNumber :: Monad m => Scientific -> m Value
+liftNumber = liftWith VNumber
+
+
+-- | Lifts a 'T.Text' into a Value in a monadic context.
+liftText :: Monad m => T.Text -> m Value
+liftText = liftWith text
 
 
 -- | Attempts to find the value associated with the given label in the operation
