@@ -28,7 +28,8 @@ import           Data.Maybe                        (fromMaybe)
 import           Data.Scientific                   (Scientific, toRealFloat)
 import qualified Data.Text                         as T
 import           Data.Time                         (Day, LocalTime)
-import           Prelude                           hiding (drop, lookup, subtract, take)
+import           Prelude                           hiding (and, drop, lookup, not, or, subtract, take)
+import qualified Prelude
 
 
 -- $setup
@@ -376,6 +377,63 @@ withNumber _ v           = raiseOperationTypeGuard "VNumber" v
 withText :: MonadError HabularaError m => (T.Text -> m a) -> Value -> m a
 withText f (VText x) = f . NEV.unpack $ x
 withText _ v         = raiseOperationTypeGuard "VText" v
+
+
+-- * Boolean Operators
+--
+-- $operatorsBoolean
+
+
+-- | Boolean @not@ operation.
+--
+-- >>> runHabularaInVoid $ not false
+-- Right (VBool True,())
+-- >>> runHabularaInVoid $ not true
+-- Right (VBool False,())
+not :: MonadError HabularaError m => Value -> m Value
+not = unaryOperation withBool (liftBool . Prelude.not)
+
+
+-- | Boolean @and@ operation.
+--
+-- >>> runHabularaInVoid $ and false false
+-- Right (VBool False,())
+-- >>> runHabularaInVoid $ and false true
+-- Right (VBool False,())
+-- >>> runHabularaInVoid $ and true false
+-- Right (VBool False,())
+-- >>> runHabularaInVoid $ and true true
+-- Right (VBool True,())
+and :: MonadError HabularaError m => Value -> Value -> m Value
+and = binaryOperation withBool (\x y -> liftBool $ (&&) x y)
+
+
+-- | Boolean @or@ operation.
+--
+-- >>> runHabularaInVoid $ or false false
+-- Right (VBool False,())
+-- >>> runHabularaInVoid $ or false true
+-- Right (VBool True,())
+-- >>> runHabularaInVoid $ or true false
+-- Right (VBool True,())
+-- >>> runHabularaInVoid $ or true true
+-- Right (VBool True,())
+or :: MonadError HabularaError m => Value -> Value -> m Value
+or = binaryOperation withBool (\x y -> liftBool $ (||) x y)
+
+
+-- | Boolean @xor@ operation.
+--
+-- >>> runHabularaInVoid $ xor false false
+-- Right (VBool False,())
+-- >>> runHabularaInVoid $ xor false true
+-- Right (VBool True,())
+-- >>> runHabularaInVoid $ xor true false
+-- Right (VBool True,())
+-- >>> runHabularaInVoid $ xor true true
+-- Right (VBool False,())
+xor :: MonadError HabularaError m => Value -> Value -> m Value
+xor = binaryOperation withBool (\x y -> liftBool $ (/=) x y)
 
 
 -- * Numeric Operators
