@@ -27,10 +27,11 @@ import qualified Data.HashMap.Strict               as HM
 import           Data.Maybe                        (fromMaybe)
 import           Data.Scientific                   (Scientific, toRealFloat)
 import qualified Data.Text                         as T
-import           Data.Time                         (Day, LocalTime)
+import           Data.Time                         (Day, LocalTime, parseTimeM)
+import qualified Data.Time
+import           Data.Time.Format                  (defaultTimeLocale)
 import           Prelude                           hiding (and, drop, lookup, not, or, subtract, take)
 import qualified Prelude
-
 
 -- $setup
 -- >>> import Data.Habulara.Core.Types.Class (runHabularaIO, runHabularaInVoid)
@@ -434,6 +435,72 @@ or = binaryOperation withBool (\x y -> liftBool $ (||) x y)
 -- Right (VBool False,())
 xor :: MonadError HabularaError m => Value -> Value -> m Value
 xor = binaryOperation withBool (\x y -> liftBool $ (/=) x y)
+
+
+-- * Date Operators
+--
+-- $operatorsDate
+
+
+-- | Parses a date.
+--
+-- >>> runHabularaInVoid $ parseDate "%Y%m%d" "20201231"
+-- Right (VDate 2020-12-31,())
+-- >>> runHabularaInVoid $ parseDate "%Y%m%d" "2020-12-31"
+-- Left (HabularaErrorOperation "Can not parse date. Format: %Y%m%d. Value: 2020-12-31")
+parseDate :: MonadError HabularaError m => Value -> Value -> m Value
+parseDate = binaryOperation
+  withText
+  (\f v -> maybe
+    (raiseOperationError $ "Can not parse date. Format: " <> f <> ". Value: " <> v)
+    (pure . VDate)
+    (parseTimeM True defaultTimeLocale (T.unpack f) (T.unpack v)))
+
+
+-- | Adds days to a date.
+--
+-- >>> runHabularaInVoid $ addDays (number 0) (date $ read "2020-12-31")
+-- Right (VDate 2020-12-31,())
+-- >>> runHabularaInVoid $ addDays (number 1) (date $ read "2020-12-31")
+-- Right (VDate 2021-01-01,())
+-- >>> runHabularaInVoid $ addDays (number (-1)) (date $ read "2020-12-31")
+-- Right (VDate 2020-12-30,())
+addDays :: MonadError HabularaError m => Value -> Value -> m Value
+addDays x y = withNumber (\n -> withDate (liftDate . Data.Time.addDays (floor n)) y) x
+
+
+-- * Time Operators
+--
+-- $operatorsTime
+
+
+-- | Parses a time.
+--
+-- >>> runHabularaInVoid $ parseTime "%Y%m%d%H%M%S" "20201231235959"
+-- Right (VTime 2020-12-31 23:59:59,())
+-- >>> runHabularaInVoid $ parseTime "%Y%m%d%H%M%S" "2020-12-31 23:59:59"
+-- Left (HabularaErrorOperation "Can not parse time. Format: %Y%m%d%H%M%S. Value: 2020-12-31 23:59:59")
+parseTime :: MonadError HabularaError m => Value -> Value -> m Value
+parseTime = binaryOperation
+  withText
+  (\f v -> maybe
+    (raiseOperationError $ "Can not parse time. Format: " <> f <> ". Value: " <> v)
+    (pure . VTime)
+    (parseTimeM True defaultTimeLocale (T.unpack f) (T.unpack v)))
+
+
+-- | Adds seconds to a date/time.
+--
+-- >>> runHabularaInVoid $ addSeconds (number 0) (time $ read "2020-12-31 23:59:59")
+-- Right (VTime 2020-12-31 23:59:59,())
+-- >>> runHabularaInVoid $ addSeconds (number 0.9) (time $ read "2020-12-31 23:59:59")
+-- Right (VTime 2020-12-31 23:59:59.9,())
+-- >>> runHabularaInVoid $ addSeconds (number 1) (time $ read "2020-12-31 23:59:59")
+-- Right (VTime 2021-01-01 00:00:00,())
+-- >>> runHabularaInVoid $ addSeconds (number (-1)) (time $ read "2020-12-31 23:59:59")
+-- Right (VTime 2020-12-31 23:59:58,())
+addSeconds :: MonadError HabularaError m => Value -> Value -> m Value
+addSeconds x y = withNumber (\n -> withTime (liftTime . Data.Time.addLocalTime (fromRational $ toRational n)) y) x
 
 
 -- * Numeric Operators
