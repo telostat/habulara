@@ -51,11 +51,11 @@ import qualified Prelude
 --
 -- If the label does not exist in the record, 'VEmpty' is returned.
 --
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "a")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty :: Record) (lookup "a")
 -- Right (VEmpty,(1,fromList []))
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (lookup "b")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty :: Record) (lookup "b")
 -- Right (VEmpty,(1,fromList []))
-lookup :: (MonadReader OperationEnvar m, MonadError HabularaError m, Alternative m) => T.Text -> m Value
+lookup :: (MonadReader OperationEnvar m, MonadError HabularaError m, Alternative m) => Value -> m Value
 lookup s = select s <|> pure VEmpty
 
 
@@ -65,12 +65,12 @@ lookup s = select s <|> pure VEmpty
 -- Similar to 'lookup' but if the label does not exist in the record,
 -- 'HabularaErrorOperation' is raised instead.
 --
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "a")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty :: Record) (select "a")
 -- Right (VEmpty,(1,fromList []))
--- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty) (select "b")
+-- >>> runHabularaIO (HM.fromList [("a", VEmpty)]) (1, HM.empty :: Record) (select "b")
 -- Left (HabularaErrorOperation "Can not find record field with label: b")
-select :: (MonadReader OperationEnvar m, MonadError HabularaError m) => T.Text -> m Value
-select s = askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find record field with label: " <> s)
+select :: (MonadReader OperationEnvar m, MonadError HabularaError m) => Value -> m Value
+select = withText (\s -> askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find record field with label: " <> s))
 
 
 -- | Attempts to retrieve the field 'Value' for the given field label from the
@@ -83,8 +83,8 @@ select s = askLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find reco
 -- Right (VText (MkNonEmpty {unpack = "A"}),(1,fromList [("a",VText (MkNonEmpty {unpack = "A"}))]))
 -- >>> runHabularaIO () (1, HM.fromList [("a", "A")]) (peek "b")
 -- Left (HabularaErrorOperation "Can not find buffer record field with label: b")
-peek :: (MonadState OperationState m, MonadError HabularaError m) => T.Text -> m Value
-peek s = getLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find buffer record field with label: " <> s)
+peek :: (MonadState OperationState m, MonadError HabularaError m) => Value -> m Value
+peek = withText (\s -> getLabel s >>= liftMaybe (HabularaErrorOperation $ "Can not find buffer record field with label: " <> s))
 
 
 -- * Value Constructors
@@ -331,7 +331,7 @@ withNumber _ v           = raiseOperationTypeGuard "VNumber" v
 -- Right ("Hello World",())
 -- >>> runHabularaInVoid $ withText (pure . ("Hello " <>)) true
 -- Left (HabularaErrorOperation "Expecting 'VText', recieved: VBool True")
--- >>> runHabularaIO (HM.fromList [("a", "A"), ("b", "B")]) () $ withText select "a"
+-- >>> runHabularaIO (HM.fromList [("a", "A"), ("b", "B")]) () $ select "a"
 -- Right (VText (MkNonEmpty {unpack = "A"}),())
 withText :: MonadError HabularaError m => (T.Text -> m a) -> Value -> m a
 withText f (VText x) = f . NEV.unpack $ x
