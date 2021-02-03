@@ -22,6 +22,7 @@ flags:
 
 dependencies:
 - base >= 4.7 && < 5
+- aeson
 - bytestring
 - cassava
 - conduit
@@ -31,6 +32,7 @@ dependencies:
 - time
 - unordered-containers
 - vector
+- yaml
 
 library:
   source-dirs: src

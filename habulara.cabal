@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3ca4d5a32131ced66ba77f236b84ec0c231e45e02dbb81e33d77c83e1f551da7
+-- hash: 71c6be2cd2e97569fc53c5d906c0685c1c9172d9211dfda87ad8baa82d212c9e
 
 name:           habulara
 version:        0.0.0.2
@@ -45,6 +45,9 @@ library
       Data.Habulara.Core.Types.NonEmpty
       Data.Habulara.Core.Types.Record
       Data.Habulara.Core.Types.Value
+      Data.Habulara.Dsl
+      Data.Habulara.Dsl.Operators
+      Data.Habulara.Dsl.Specification
   other-modules:
       Paths_habulara
   hs-source-dirs:
@@ -52,7 +55,8 @@ library
   default-extensions: OverloadedStrings
   ghc-options: -Wall
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , bytestring
     , cassava
     , conduit
@@ -62,6 +66,7 @@ library
     , time
     , unordered-containers
     , vector
+    , yaml
   default-language: Haskell2010
 
 executable habulara
@@ -72,7 +77,8 @@ executable habulara
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , bytestring
     , cassava
     , conduit
@@ -83,6 +89,7 @@ executable habulara
     , time
     , unordered-containers
     , vector
+    , yaml
   if flag(static) && !(os(osx))
     ld-options: -static -pthread
   default-language: Haskell2010
@@ -96,7 +103,8 @@ test-suite habulara-doctest
       ./.
   ghc-options: -threaded
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , bytestring
     , cassava
     , conduit
@@ -108,6 +116,7 @@ test-suite habulara-doctest
     , time
     , unordered-containers
     , vector
+    , yaml
   default-language: Haskell2010
 
 test-suite habulara-test
@@ -122,6 +131,7 @@ test-suite habulara-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , aeson
     , base >=4.7 && <5
     , bytestring
     , cassava
@@ -134,4 +144,5 @@ test-suite habulara-test
     , time
     , unordered-containers
     , vector
+    , yaml
   default-language: Haskell2010

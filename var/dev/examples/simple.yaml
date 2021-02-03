@@ -1,50 +1,60 @@
 name: Latest Weather Figures
-dataName: WeatherRecord
 description: >
-  Provides latest weather report figures.
+  This is a simple example that consumes a CSV with following fields:
 
-  In addition to what the original file provides, mapped file includes the
-  temperature in Fahrenheit.
+  1. **id:** ID of the location
+  2. **name:** Name of the location
+  3. **temperature:** Temperature of the location in degree Celcius
+  4. **precipitation:** Probability of precipitation for the location as a number between 0 and 1.
+
+  ... and produces a CSV with following fields:
+
+  1. **code:** Idenfifier code of the location (same as **id** in the original input)
+  2. **name:** Name of the location (no operation is defined, ie. pass-through)
+  3. **temperatureC:** Temperature of the location in degree Celcius
+  4. **temperatureF:** Temperature of the location in degree Fahrenheit
+  5. **precipitation:** Probability of precipitation for the location as percentage points.
+
+  ... whereby
+
+  - both **temperatureF** and **precipitation** are computed values, and
+  - **temperatureC** is a type-guarded value.
 delimiter: ","
 fields:
-- type: Text
-  targetColumn: id
-  shortDescription: ID
-  longDescription: ID of the record
-  allowMissingColumn: false
-  allowEmptyValue: false
-  action: []
-- type: Text
-  targetColumn: name
-  shortDescription: Name
-  longDescription: Name of the record
-  allowMissingColumn: false
-  allowEmptyValue: false
-  action: []
-- type: Decimal
-  targetColumn: tempCelcius
-  sourceColumn: temperature
-  shortDescription: Temperature (C)
-  longDescription: Temperature in Celcius
-  allowMissingColumn: false
-  allowEmptyValue: false
-  action: ["decimal"]
-- type: Decimal
-  targetColumn: tempFahrenheit
-  sourceColumn: temperature
-  shortDescription: Temperature (F)
-  longDescription: Temperature in Fahrenheit
-  allowMissingColumn: false
-  allowEmptyValue: false
-  action:
-  - "decimal"
-  - ["multiply", 9]
-  - ["divideBy", 5]
-  - ["add", 32]
-- type: Decimal
-  targetColumn: precipitation
-  shortDescription: Precipitation
-  longDescription: Precipitation in percentage points
-  allowMissingColumn: false
-  allowEmptyValue: false
-  action: ["decimal", "percentage"]
+  - label: code
+    title: Code
+    description: Identifier code of the location.
+    operation:
+      - name: select
+        args: ["id"]
+  - label: name
+    title: Name
+    description: Name of the location.
+  - label: temperatureC
+    title: Temperature (°C)
+    description: Temperature of the location in degree Celcius.
+    operation:
+      - name: select
+        args: ["temperature"]
+      - name: "asNumber"
+  - label: temperatureF
+    title: Temperature (°F)
+    description: Temperature of the location in degree Fahrenheit.
+    operation:
+      - name: select
+        args: ["temperature"]
+      - name: asNumber
+      - name: multiply
+        args: [9]
+      - name: flipDivide
+        args: [5]
+      - name: add
+        args: [32]
+  - label: precipitation
+    title: Precipitation
+    description: Probability of precipitation in percentage points.
+    operation:
+      - name: select
+        args: ["precipitation"]
+      - name: asNumber
+      - name: percentage

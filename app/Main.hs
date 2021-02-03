@@ -2,24 +2,20 @@
 
 module Main where
 
-import qualified Data.ByteString.Lazy         as BL
-import           Data.Habulara.Core.Conduit   (runMapperIntoHandle)
-import           Data.Habulara.Core.Operation
-import           System.Environment           (getArgs)
-import           System.IO                    (hPutStrLn, stderr, stdout)
+import qualified Data.ByteString.Lazy as BL
+import           Data.Habulara.Dsl    (runIntoHandle)
+import           System.Environment   (getArgs)
+import           System.Exit          (die)
+import           System.IO            (hPutStrLn, stderr, stdout)
+import           Text.Printf          (printf)
 
 
 main :: IO ()
 main = do
-  [filepath] <- getArgs
-  content <- BL.readFile filepath
-  x <- runMapperIntoHandle ',' fops True content stdout
-  either print (hPutStrLn stderr . ("Total number of records processed: " <>) . show . snd) x
-  where
-    fops =
-      [ ("id", select "id")
-      , ("name", select "name")
-      , ("tempCelcius", select "temperature")
-      , ("tempFahrenheit", select "temperature" >>= asNumber >>= multiply (number 9) >>= flip divide (number 5) >>= add (number 32))
-      , ("precipitation", select "precipitation" >>= asNumber >>= percentage)
-      ]
+  [specFile, dataFile] <- getArgs
+  specContent <- BL.readFile specFile
+  dataContent <- BL.readFile dataFile
+  result <- runIntoHandle specContent dataContent stdout
+  case result of
+    Left err     -> die ("Error while processing records: " <> show err)
+    Right (_, n) -> hPutStrLn stderr $ printf "Successfully processed %d record%s. Exiting..." n (if n == 1 then "" else "s" :: String)
