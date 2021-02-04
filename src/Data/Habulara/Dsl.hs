@@ -1,7 +1,6 @@
 module Data.Habulara.Dsl
-  ( module Types
-  , module Utils
-  ) where
+  ( runIntoHandle
+  )
+  where
 
-import Data.Habulara.Internal.Dsl.Types as Types
-import Data.Habulara.Internal.Dsl.Utils as Utils
+import Data.Habulara.Dsl.Specification (runIntoHandle)

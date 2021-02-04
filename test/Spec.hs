@@ -1,24 +1,22 @@
-{-# LANGUAGE OverloadedStrings #-}
+import qualified Data.ByteString    as B
+import           Data.Habulara.Core (NonEmpty)
+import qualified Data.Text          as T
+import           Instances          ()
+import           Laws               (prop_monoidLeftIdentity, prop_monoidRightIdentity, prop_semigroupAssoc)
+import           Test.QuickCheck    (quickCheck, withMaxSuccess)
 
-import qualified Data.ByteString.Lazy       as BL
-import qualified Data.ByteString.Lazy.Char8 as BLC
-import           Data.Habulara.Dsl          (As(..), FieldSpec(..), FileSpec(..), Op(..), process)
-import           System.IO                  (hPutStrLn, stderr, stdout)
+
+------------
+-- RUNNER --
+------------
 
 
 main :: IO ()
 main = do
-  content <- BL.readFile "test/examples/simple.csv"
-  case process fileSpec content of
-    Left err -> hPutStrLn stderr $ "Error while processing the file: " <> err
-    Right oc -> BLC.hPutStr stdout oc
+  -- Let's warmup! Check semigroup and monoid laws for String::
+  quickCheck (withMaxSuccess 1000 (prop_semigroupAssoc :: String -> String -> String -> Bool))
+  quickCheck (withMaxSuccess 1000 (prop_monoidLeftIdentity :: String -> Bool))
+  quickCheck (withMaxSuccess 1000 (prop_monoidRightIdentity :: String -> Bool))
 
-
-fileSpec :: FileSpec
-fileSpec = FileSpec "Latest Weather Figures" Nothing Nothing ','
-  [ FieldSpec AsText "id" Nothing (Just "ID") (Just "ID of the record") False False []
-  , FieldSpec AsText "name" Nothing (Just "Name") (Just "Name of the record") False False []
-  , FieldSpec AsDecimal "tempCelcius" (Just "temperature") (Just "Temperature (C)") (Just "Temperature in Celcius") False False [OpDecimal]
-  , FieldSpec AsDecimal "tempFahrenheit" (Just "temperature") (Just "Temperature (F)") (Just "Temperature in Fahrenheit") False False [OpDecimal, OpMultiply 9, OpDivideBy 5, OpAdd 32]
-  , FieldSpec AsDecimal "precipitation" Nothing (Just "Precipitation (%)") (Just "Precipitation in percentage points") False False [OpDecimal, OpPercentage]
-  ]
+  -- Laws for NonEmpty:
+  quickCheck (prop_semigroupAssoc :: NonEmpty T.Text -> NonEmpty T.Text -> NonEmpty T.Text -> Bool)

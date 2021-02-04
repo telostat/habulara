@@ -1,34 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import qualified Data.ByteString                    as B
-import qualified Data.ByteString.Lazy               as BL
-import qualified Data.ByteString.Lazy.Char8         as BLC
-import           Data.Habulara.Dsl                  (processWithHab, readHab)
-import           Data.Habulara.Internal.Dsl.CodeGen (generateData)
-import qualified Data.Text                          as T
-import           System.Environment                 (getArgs)
-import           System.Exit                        (die, exitFailure)
-import           System.IO                          (hPutStrLn, stderr, stdout)
+import qualified Data.ByteString.Lazy as BL
+import           Data.Habulara.Dsl    (runIntoHandle)
+import           System.Environment   (getArgs)
+import           System.Exit          (die)
+import           System.IO            (hPutStrLn, stderr, stdout)
+import           Text.Printf          (printf)
 
 
 main :: IO ()
 main = do
-  eprog <- getProgramArguments =<< getArgs
-  case eprog of
-    Left habpath -> do
-      hab <- B.readFile habpath
-      case readHab hab of
-        Left err -> hPutStrLn stderr ("Can not read HAB file: " <> err) >> exitFailure
-        Right fs -> putStrLn $ T.unpack $ generateData fs
-    Right (habpath, csvpath) -> do
-      hab <- B.readFile habpath
-      csv <- BL.readFile csvpath
-      case processWithHab hab csv of
-        Left err -> hPutStrLn stderr ("Error while processing the file: " <> err) >> exitFailure
-        Right oc -> BLC.hPutStr stdout oc
-
-
-getProgramArguments :: [FilePath] -> IO (Either FilePath (FilePath, FilePath))
-getProgramArguments [habfile]          = pure $ Left habfile
-getProgramArguments [habfile, csvfile] = pure $ Right (habfile, csvfile)
-getProgramArguments _                  = die "Incorrect number of arguments. Exiting..."
+  [specFile, dataFile] <- getArgs
+  specContent <- BL.readFile specFile
+  dataContent <- BL.readFile dataFile
+  result <- runIntoHandle specContent dataContent stdout
+  case result of
+    Left err     -> die ("Error while processing records: " <> show err)
+    Right (_, n) -> hPutStrLn stderr $ printf "Successfully processed %d record%s. Exiting..." n (if n == 1 then "" else "s" :: String)
