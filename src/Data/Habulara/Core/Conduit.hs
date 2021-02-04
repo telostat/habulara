@@ -6,7 +6,7 @@ import qualified Data.ByteString.Lazy                as BL
 import           Data.Conduit                        (ConduitT, Void, runConduit, (.|))
 import qualified Data.Conduit.Combinators            as C
 import           Data.Habulara.Core.Internal.Cassava (conduitEncode, sourceCassavaRecordsContents)
-import           Data.Habulara.Core.Mapping          (FieldOperator, mapRecord)
+import           Data.Habulara.Core.Mapping          (FieldMapper, mapRecord)
 import           Data.Habulara.Core.Types.Class      (HabularaError(..), HabularaT, runHabularaT)
 import qualified Data.Text.Encoding                  as TE
 import qualified Data.Vector                         as V
@@ -16,7 +16,7 @@ import           System.IO                           (Handle)
 runMapperIntoHandle
   :: MonadIO io
   => Char
-  -> [FieldOperator]
+  -> [FieldMapper]
   -> Bool
   -> BL.ByteString
   -> Handle
@@ -27,7 +27,7 @@ runMapperIntoHandle delim ops headerp content handle = runMapperWithSink delim o
 runMapperWithSink
   :: MonadIO io
   => Char                                                    -- ^ Delimiter
-  -> [FieldOperator]                                         -- ^ Field operators
+  -> [FieldMapper]                                         -- ^ Field operators
   -> Bool                                                    -- ^ Indicates if we want the header in the output
   -> BL.ByteString                                           -- ^ CSV contents
   -> ConduitT B.ByteString Void (HabularaT () Integer io) () -- ^ Sink

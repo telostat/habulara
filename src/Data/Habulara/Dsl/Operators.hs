@@ -5,7 +5,7 @@ import qualified Data.Aeson                   as Aeson
 import qualified Data.Aeson.Types             as Aeson.Types
 import           Data.Char                    (toLower, toUpper)
 import           Data.Habulara.Core           (Value)
-import           Data.Habulara.Core.Mapping   (Operator)
+import           Data.Habulara.Core.Mapping   (ValueMapperT)
 import qualified Data.Habulara.Core.Operation as O
 import           Data.Maybe                   (fromMaybe)
 import           Data.Scientific              (Scientific)
@@ -104,7 +104,7 @@ data Op =
   deriving (Show)
 
 
-toOperator :: Op -> (Value -> Operator)
+toOperator :: Op -> (Value -> ValueMapperT)
 toOperator (OpN0 AsEmpty)          = O.asEmpty
 toOperator (OpN0 AsBool)           = O.asBool
 toOperator (OpN0 AsDate)           = O.asDate
@@ -155,7 +155,7 @@ instance Aeson.FromJSON Op where
       parseNameArgs = Aeson.withObject "Op" $ \o -> (,) <$> o .: "name" <*> (fromMaybe [] <$> o .:? "args")
 
 
-compileOperator :: T.Text -> [Op] -> Operator
+compileOperator :: T.Text -> [Op] -> ValueMapperT
 compileOperator label [] = O.select (O.text label)
 compileOperator _     xs = foldl (\o x -> o >>= toOperator x) (pure O.empty) xs
 

@@ -9,57 +9,47 @@ import           Control.Monad.Except       (MonadError(throwError))
 import           Control.Monad.IO.Class     (MonadIO(..))
 import           Control.Monad.Reader       (MonadReader)
 import           Control.Monad.Reader.Class (asks)
-import           Control.Monad.State        (MonadState(..), gets)
+import           Control.Monad.State        (MonadState(..), gets, modify')
 import           Data.Habulara.Core         (HabularaT, Label, MonadHabulara, Record, Value, runHabularaT)
 import qualified Data.HashMap.Strict        as HM
 
+
 -- * Types
 --
--- In essence, an operation is defined in a 'MonadHabulara' context
--- ('Operation') with a raw 'Record' as the environment variable
--- ('OperationEnvar') and a 2-tuple of (1) current row number and (2) the buffer
--- 'Record' being built up ('OperationState').
+-- In essence, an record or value mapper is defined in a 'MonadHabulara' context
+-- ('MapperM') with an environment 'MapperEnvir' and state 'MapperState'.
 --
 -- $types
 
 
--- | Environment type for 'Operation'.
+-- | 'MonadHabulara' constraint for record or value mapping.
+type MapperM m = MonadHabulara MapperEnvir MapperState m
+
+
+-- | Environment type for record or value 'MapperM'.
 --
--- This is the raw row record as the input to the current operation.
-type OperationEnvar = Record
+-- This is a 2-tuple of current record number and the raw record data.
+type MapperEnvir = (Integer, Record)
 
 
--- | State type for 'Operator'.
+-- | State type for record or value 'MapperM'.
 --
--- This is a 2-tuple of:
+-- This is the current record being built.
+type MapperState = Record
+
+
+-- | High-level value mapper type based on 'HabularaT' in an 'IO' monad.
 --
--- 1. Current row number in operation, and
--- 2. Current buffer record being built up.
-type OperationState = (Integer, Record)
+-- Library users may still wish to stick to 'MapperM' constraint when
+-- defining value mappers.
+type ValueMapperT = HabularaT MapperEnvir MapperState IO Value
 
 
--- | 'MonadHabulara' constraint for operations.
-type Operation m = MonadHabulara OperationEnvar OperationState m
-
-
--- | High-level operator type based on 'HabularaM'.
+-- | Type definition of a field mapper specification.
 --
--- Library users may still wish to stick to 'Operation m' constraint when
--- defining operators.
-type Operator = HabularaT OperationEnvar OperationState IO Value
-
-
--- | Type definition of a field operator.
---
--- Essentially, this aids a mapping from the label of the field to the operator
--- of the field.
-type FieldOperator = (Label, Operator)
-
-
--- | Type definition for the mapping monad based on 'MonadHabulara'.
---
--- We are keeping the __current__ row number as the state.
-type MappingM m = MonadHabulara () Integer m
+-- Essentially, this aids a mapping from the label of the field to the value
+-- mapper of the field.
+type FieldMapper = (Label, ValueMapperT)
 
 
 -- * Mapping
@@ -67,16 +57,15 @@ type MappingM m = MonadHabulara () Integer m
 -- $mapping
 
 
--- | Maps a 'Record' to a 'Record' as per given 'FieldOperator's (field label -
--- field value mapping).
+-- | Maps a 'Record' to a 'Record' as per given list of 'FieldMapper' values
+-- (field label - field value mapping).
 --
--- This function is constrained by 'MappingM', ie. 'MonadHabulara' with no
--- environment but a state representing the current record counter as an
--- 'Integer'.
-mapRecord :: MappingM m => [FieldOperator] -> Record -> m Record
+-- This function is constrained by 'MonadHabulara' with an 'Integer' state
+-- whereby the state stands for the current record number.
+mapRecord :: MonadHabulara r Integer m => [FieldMapper] -> Record -> m Record
 mapRecord ops record = do
-  nstate <- gets (, HM.empty)
-  result <- liftIO $ runHabularaT record nstate (buildRecord ops)
+  nenvar <- gets (, record)
+  result <- liftIO $ runHabularaT nenvar HM.empty (buildRecord ops)
   either throwError (pure . fst) result
 
 
@@ -85,11 +74,11 @@ mapRecord ops record = do
 --
 -- The constraint's monad is parameterized, hence the 'm' in the mapping
 -- (@'Label', m 'Value'@). Call-sites may consider using 'mapRecord' which is a
--- high level function using this function and constrained by 'MappingM'
+-- high level function using this function and constrained by 'MapperM'
 -- providing a state monad for the record number being mapped.
-buildRecord :: Operation m => [(Label, m Value)] -> m Record
-buildRecord []                  = gets snd
-buildRecord ((name, prog) : xs) = prog >>= modifyRecord . HM.insert name >> buildRecord xs
+buildRecord :: MapperM m => [(Label, m Value)] -> m Record
+buildRecord []             = get
+buildRecord ((l, op) : xs) = op >>= modify' . HM.insert l >> buildRecord xs
 
 
 -- * Helpers
@@ -99,28 +88,28 @@ buildRecord ((name, prog) : xs) = prog >>= modifyRecord . HM.insert name >> buil
 
 -- | Attempts to find the value associated with the given label in the operation
 -- environment and applies the given function to it.
-asksLabel :: MonadReader OperationEnvar m => Label -> (Value -> a) -> m (Maybe a)
-asksLabel l f = asks (fmap f . HM.lookup l)
+asksLabel :: MonadReader MapperEnvir m => Label -> (Value -> a) -> m (Maybe a)
+asksLabel l f = asks (fmap f . HM.lookup l . snd)
 
 
 -- | Attempts to find the value associated with the given label in the operation
 -- environment.
-askLabel :: MonadReader OperationEnvar m => Label -> m (Maybe Value)
+askLabel :: MonadReader MapperEnvir m => Label -> m (Maybe Value)
 askLabel l = asksLabel l id
+
+
+-- | Returns the number of the current record mapped.
+askCount :: MonadReader MapperEnvir m => m Integer
+askCount = asks fst
 
 
 -- | Attempts to find the value associated with the given label in the state
 -- buffer record and applies the given function to it.
-getsLabel :: MonadState OperationState m => Label -> (Value -> a) -> m (Maybe a)
-getsLabel l f = gets (fmap f . HM.lookup l . snd)
+getsLabel :: MonadState MapperState m => Label -> (Value -> a) -> m (Maybe a)
+getsLabel l f = gets (fmap f . HM.lookup l)
 
 
 -- | Attempts to find the value associated with the given label in the state
 -- buffer record.
-getLabel :: MonadState OperationState m => Label -> m (Maybe Value)
+getLabel :: MonadState MapperState m => Label -> m (Maybe Value)
 getLabel l = getsLabel l id
-
-
--- | Modifies the operation state buffer record.
-modifyRecord :: MonadState OperationState m => (Record -> Record) -> m ()
-modifyRecord f = get >>= (\(c, r) -> put (c, f r))
