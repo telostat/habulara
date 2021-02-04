@@ -1,0 +1,59 @@
+name: Latest Weather Station Measurements
+description: >
+  This is a simple example that consumes a CSV with following fields:
+
+  1. **id:** ID of the weather station
+  2. **code:** Alphanumeric code of the weather station
+  3. **temp:** Temperature measured at the weather station, in degree Celcius
+  4. **prec:** Probability of precipitation anticipated at the weather station as a number between 0 and 1.
+
+  ... and produces a CSV with following fields:
+
+  1. **wsid:** ID of the weather station (same as **id** in the original input)
+  2. **code:** Alphanumeric code of the weather station (no operation is defined, ie. pass-through)
+  3. **temperatureC:** Temperature measured at the weather station, in degree Celcius
+  4. **temperatureF:** Temperature measured at the weather station, in degree Fahrenheit
+  5. **precipitation:** Probability of precipitation anticipated at the weather station in percentage points.
+
+  ... whereby
+
+  - both **temperatureF** and **precipitation** are computed values, and **temperatureC** is a type-guarded value.
+delimiter: ","
+fields:
+  - label: wsid
+    title: Weather Station ID
+    description: ID of the weather station
+    operation:
+      - name: select
+        args: ["id"]
+  - label: code
+    title: Weather Station Code
+    description: Alphanumeric code of the weather station
+  - label: temperatureC
+    title: Temperature (°C)
+    description: Temperature measured at the weather station, in degree Celcius
+    operation:
+      - name: select
+        args: ["temp"]
+      - name: "asNumber"
+  - label: temperatureF
+    title: Temperature (°F)
+    description: Temperature measured at the weather station, in degree Fahrenheit
+    operation:
+      - name: select
+        args: ["temp"]
+      - name: asNumber
+      - name: multiply
+        args: [9]
+      - name: flipDivide
+        args: [5]
+      - name: add
+        args: [32]
+  - label: precipitation
+    title: Precipitation
+    description: Probability of precipitation anticipated at the weather station in percentage points
+    operation:
+      - name: select
+        args: ["prec"]
+      - name: asNumber
+      - name: percentage
