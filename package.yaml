@@ -52,6 +52,7 @@ executables:
     - -Wall
     dependencies:
     - habulara
+    - optparse-applicative
     when:
       - condition: "flag(static) && !(os(osx))"
         ld-options:
