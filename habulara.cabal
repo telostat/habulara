@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 34496f21df2397275c3d23f19e761fdeafea461a1d5f9ed4b1171b0b084b269f
+-- hash: a4c34310d9ecee3092023313105a975da069f7c3329d506c2711dcb26744a4da
 
 name:           habulara
-version:        0.0.0.1
+version:        0.0.0.2
 synopsis:       Toolkit for Processing Tabular Data
 description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 category:       Text, CSV
@@ -22,9 +22,6 @@ build-type:     Simple
 extra-source-files:
     README.md
     ChangeLog.md
-    test/examples/generate.R
-    test/examples/simple.csv
-    test/examples/simple.yaml
 
 source-repository head
   type: git
@@ -38,37 +35,33 @@ flag static
 library
   exposed-modules:
       Data.Habulara
+      Data.Habulara.Core
+      Data.Habulara.Core.Conduit
+      Data.Habulara.Core.Internal.Cassava
+      Data.Habulara.Core.Mapping
+      Data.Habulara.Core.Operation
+      Data.Habulara.Core.Types
+      Data.Habulara.Core.Types.Class
+      Data.Habulara.Core.Types.NonEmpty
+      Data.Habulara.Core.Types.Record
+      Data.Habulara.Core.Types.Value
       Data.Habulara.Dsl
-      Data.Habulara.Internal.Commons.Convert
-      Data.Habulara.Internal.Commons.Csv
-      Data.Habulara.Internal.Commons.Read
-      Data.Habulara.Internal.Commons.String
-      Data.Habulara.Internal.Commons.Text
-      Data.Habulara.Internal.Commons.Time
-      Data.Habulara.Internal.Dsl.CodeGen
-      Data.Habulara.Internal.Dsl.Compiler
-      Data.Habulara.Internal.Dsl.Types
-      Data.Habulara.Internal.Dsl.Utils
-      Data.Habulara.Internal.Mapping
-      Data.Habulara.Internal.Operators
-      Data.Habulara.Internal.Reading
-      Data.Habulara.Internal.Writing
-      Data.Habulara.Types
+      Data.Habulara.Dsl.Operators
+      Data.Habulara.Dsl.Specification
   other-modules:
       Paths_habulara
   hs-source-dirs:
       src
+  default-extensions: OverloadedStrings
   ghc-options: -Wall
   build-depends:
       aeson
     , base >=4.7 && <5
     , bytestring
     , cassava
-    , containers
+    , conduit
     , mtl
-    , profunctors
     , scientific
-    , string-interpolate
     , text
     , time
     , unordered-containers
@@ -88,12 +81,11 @@ executable habulara
     , base >=4.7 && <5
     , bytestring
     , cassava
-    , containers
+    , conduit
     , habulara
     , mtl
-    , profunctors
+    , optparse-applicative
     , scientific
-    , string-interpolate
     , text
     , time
     , unordered-containers
@@ -103,25 +95,52 @@ executable habulara
     ld-options: -static -pthread
   default-language: Haskell2010
 
-test-suite habulara-test
+test-suite habulara-doctest
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: doctest.hs
   other-modules:
       Paths_habulara
   hs-source-dirs:
-      test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+      ./.
+  ghc-options: -threaded
   build-depends:
       aeson
     , base >=4.7 && <5
     , bytestring
     , cassava
-    , containers
+    , conduit
+    , doctest
     , habulara
     , mtl
-    , profunctors
     , scientific
-    , string-interpolate
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , yaml
+  default-language: Haskell2010
+
+test-suite habulara-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Instances
+      Laws
+      Paths_habulara
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , aeson
+    , base >=4.7 && <5
+    , bytestring
+    , cassava
+    , conduit
+    , habulara
+    , mtl
+    , quickcheck-instances
+    , scientific
     , text
     , time
     , unordered-containers

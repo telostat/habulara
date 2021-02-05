@@ -1,5 +1,5 @@
 name:                habulara
-version:             0.0.0.1
+version:             0.0.0.2
 github:              "telostat/habulara"
 license:             BSD3
 author:              "Vehbi Sinan Tunalioglu"
@@ -9,9 +9,6 @@ copyright:           "Copyright (c) 2020 Telostat Pte Ltd"
 extra-source-files:
 - README.md
 - ChangeLog.md
-- test/examples/generate.R
-- test/examples/simple.csv
-- test/examples/simple.yaml
 
 synopsis:            Toolkit for Processing Tabular Data
 category:            Text, CSV
@@ -28,11 +25,9 @@ dependencies:
 - aeson
 - bytestring
 - cassava
-- containers
+- conduit
 - mtl
-- profunctors
 - scientific
-- string-interpolate
 - text
 - time
 - unordered-containers
@@ -43,6 +38,8 @@ library:
   source-dirs: src
   ghc-options:
   - -Wall
+  default-extensions:
+    - OverloadedStrings
 
 executables:
   habulara:
@@ -55,6 +52,7 @@ executables:
     - -Wall
     dependencies:
     - habulara
+    - optparse-applicative
     when:
       - condition: "flag(static) && !(os(osx))"
         ld-options:
@@ -71,3 +69,14 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - habulara
+    - QuickCheck
+    - quickcheck-instances
+
+  habulara-doctest:
+    main:                doctest.hs
+    source-dirs:         .
+    ghc-options:
+    - -threaded
+    dependencies:
+    - habulara
+    - doctest
