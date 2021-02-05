@@ -4,17 +4,21 @@
 ![GitHub contributors](https://img.shields.io/github/contributors/telostat/habulara)
 ![GitHub](https://img.shields.io/github/license/telostat/habulara)
 
-> **Note:** This package is under heavy development. Expect breaking
-> changes without notification until we reach the first major version.
+> **Note:** This package is under heavy development and of prototype
+> quality at the moment. Expect significant performance regressions
+> across releases and breaking changes without notification until we
+> reach the first major version.
 
-Habulara is a Haskell library and command line application which
-provide high-level means to process tabular data, in particular CSV
-files.
+Habulara is a Haskell library and command line application that
+provides high-level means to process tabular data, in particular CSV
+files in a declarative fashion.
 
 ## Installation
 
 ```
-stack install habulara
+git clone git@github.com:telostat/habulara.git
+cd habulara
+stack install
 ```
 
 ## Usage
