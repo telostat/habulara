@@ -25,7 +25,21 @@ To process a CSV file as per a given HAB (Habulara mapping
 specification) file:
 
 ```
-habulara var/examples/weather-stations/spec.yaml var/examples/weather-stations/data.csv
+$ habulara process --help
+Usage: habulara process --spec SPEC [--input INPUT] [--output OUTPUT]
+  Process given CSV data with given specification
+
+Available options:
+  --spec SPEC              Habulara mapper specification filepath
+  --input INPUT            Input CSV data filepath (`-` for stdin, default)
+  --output OUTPUT          Output CSV data filepath (`-` for stdout, default)
+  -h,--help                Show this help text
+```
+
+... example:
+
+```
+habulara process --spec var/examples/weather-stations/spec.yaml --input var/examples/weather-stations/data.csv
 ```
 
 ### As a library

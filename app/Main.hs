@@ -1,21 +1,82 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
 import qualified Data.ByteString.Lazy as BL
 import           Data.Habulara.Dsl    (runIntoHandle)
-import           System.Environment   (getArgs)
-import           System.Exit          (die)
-import           System.IO            (hPutStrLn, stderr, stdout)
+import           Data.Version         (showVersion)
+import qualified Options.Applicative  as OA
+import           Paths_habulara       (version)
+import           System.Exit          (ExitCode(..), exitWith)
+import           System.IO            (Handle, IOMode(..), hPutStrLn, openFile, stderr, stdin, stdout)
 import           Text.Printf          (printf)
 
 
+-- | Main program entry point.
 main :: IO ()
-main = do
-  [specFile, dataFile] <- getArgs
-  specContent <- BL.readFile specFile
-  dataContent <- BL.readFile dataFile
-  result <- runIntoHandle specContent dataContent stdout
+main = exitWith =<< (cliProgram =<< OA.execParser cliProgramParserInfo)
+
+
+-- | CLI program.
+cliProgram :: CliArguments -> IO ExitCode
+cliProgram (CliArguments (CommandProcess (sfp, mifp, mofp))) = process sfp (mkFp mifp) (mkFp mofp)
+  where
+    mkFp (Just "-") = Nothing
+    mkFp x          = x
+
+
+-- | Processes given CSV data with given specification.
+process :: FilePath -> Maybe FilePath -> Maybe FilePath -> IO ExitCode
+process sfp Nothing Nothing       = processAux (openFile sfp ReadMode) (pure stdin) (pure stdout)
+process sfp (Just ifp) Nothing    = processAux (openFile sfp ReadMode) (openFile ifp ReadMode) (pure stdout)
+process sfp Nothing (Just ofp)    = processAux (openFile sfp ReadMode) (pure stdin) (openFile ofp WriteMode)
+process sfp (Just ifp) (Just ofp) = processAux (openFile sfp ReadMode) (openFile ifp ReadMode) (openFile ofp WriteMode)
+
+
+-- | Auxiliary function to 'process'
+processAux :: IO Handle -> IO Handle -> IO Handle -> IO ExitCode
+processAux ms mi mo = do
+  specContent <- BL.hGetContents =<< ms
+  dataContent <- BL.hGetContents =<< mi
+  result <- runIntoHandle specContent dataContent =<< mo
   case result of
-    Left err     -> die ("Error while processing records: " <> show err)
-    Right (_, n) -> hPutStrLn stderr $ printf "Successfully processed %d record%s. Exiting..." n (if n == 1 then "" else "s" :: String)
+    Left err     ->
+      hPutStrLn stderr ("Error while processing records: " <> show err) >>
+      pure (ExitFailure 1)
+    Right (_, n) ->
+      hPutStrLn stderr (printf "Successfully processed %d record%s. Exiting..." n (if n == 1 then "" else "s" :: String)) >>
+      pure ExitSuccess
+
+
+-- | CLI arguments parser.
+parserProgramOptions :: OA.Parser CliArguments
+parserProgramOptions = CliArguments <$> OA.hsubparser
+  ( OA.command "process" (OA.info (CommandProcess <$> optsProcess) (OA.progDesc "Process given CSV data with given specification"))
+  )
+
+
+-- | @process@ command arguments parser.
+optsProcess :: OA.Parser (FilePath, Maybe FilePath, Maybe FilePath)
+optsProcess = (,,)
+  <$> OA.strOption (OA.long "spec" <> OA.metavar "SPEC" <> OA.help "Habulara mapper specification filepath")
+  <*> OA.optional (OA.strOption (OA.long "input" <> OA.metavar "INPUT" <> OA.help "Input CSV data filepath (`-` for stdin, default)"))
+  <*> OA.optional (OA.strOption (OA.long "output" <> OA.metavar "OUTPUT" <> OA.help "Output CSV data filepath (`-` for stdout, default)"))
+
+
+-- | Registry of commands.
+newtype Command = CommandProcess (FilePath, Maybe FilePath, Maybe FilePath)
+  deriving Show
+
+
+-- | Parsed command line arguments.
+newtype CliArguments = CliArguments { cliArgumentsCommand :: Command } deriving Show
+
+
+-- | CLI program information.
+cliProgramParserInfo :: OA.ParserInfo CliArguments
+cliProgramParserInfo = OA.info
+  (OA.helper <*> parserVersionOption <*> parserProgramOptions)
+  (OA.fullDesc <> OA.progDesc "Habulara" <> OA.header "habulara - CSV toolkit")
+
+
+-- | Version option.
+parserVersionOption :: OA.Parser (a -> a)
+parserVersionOption = OA.infoOption (showVersion version) (OA.long "version" <> OA.help "Show version")

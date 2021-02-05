@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 71c6be2cd2e97569fc53c5d906c0685c1c9172d9211dfda87ad8baa82d212c9e
+-- hash: a4c34310d9ecee3092023313105a975da069f7c3329d506c2711dcb26744a4da
 
 name:           habulara
 version:        0.0.0.2
@@ -84,6 +84,7 @@ executable habulara
     , conduit
     , habulara
     , mtl
+    , optparse-applicative
     , scientific
     , text
     , time
