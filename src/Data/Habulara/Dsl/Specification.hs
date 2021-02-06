@@ -32,6 +32,7 @@ data MappingSpec = MappingSpec
   { mappingSpecName        :: !T.Text
   , mappingSpecDescription :: !(Maybe T.Text)
   , mappingSpecDelimiter   :: !(Maybe Char)
+  , mappingSpecEncoding    :: !(Maybe String)
   , mappingSpecFields      :: !(NE.NonEmpty FieldSpec)
   } deriving (Show)
 
@@ -52,8 +53,9 @@ readSpecFilePath filepath = readSpec <$> liftIO (BL.readFile filepath)
 
 
 runWithSpecIntoHandle :: MonadIO io => MappingSpec -> BL.ByteString -> Handle -> io (Either HabularaError ((), Integer))
-runWithSpecIntoHandle ms = runMapperIntoHandle delimiter fops True
+runWithSpecIntoHandle ms = runMapperIntoHandle delimiter encoding fops True
   where
+    encoding = mappingSpecEncoding ms
     compiler (FieldSpec l _ _ o) = compileOperator l (maybe [] NE.toList o)
     delimiter = fromMaybe ',' (mappingSpecDelimiter ms)
     fops = fmap (fieldSpecLabel &&& compiler) (NE.toList $ mappingSpecFields ms)
