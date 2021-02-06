@@ -26,6 +26,7 @@ dependencies:
 - bytestring
 - cassava
 - conduit
+- iconv
 - mtl
 - scientific
 - text
