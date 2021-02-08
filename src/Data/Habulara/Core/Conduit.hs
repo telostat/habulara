@@ -13,29 +13,33 @@ import qualified Data.Vector                         as V
 import           System.IO                           (Handle)
 
 
+-- | Maps given CSV data into a file handle.
 runMapperIntoHandle
   :: MonadIO io
-  => Char
-  -> [FieldMapper]
-  -> Bool
-  -> BL.ByteString
-  -> Handle
+  => Char           -- ^ Delimiter
+  -> Maybe String   -- ^ Optional source text encoding
+  -> [FieldMapper]  -- ^ Field operators
+  -> Bool           -- ^ Indicates if we want the header in the output
+  -> BL.ByteString  -- ^ CSV data
+  -> Handle         -- ^ File handle to sink to
   -> io (Either HabularaError ((), Integer))
-runMapperIntoHandle delim ops headerp content handle = runMapperWithSink delim ops headerp content (C.sinkHandle handle)
+runMapperIntoHandle delim encoding ops headerp content handle = runMapperWithSink delim encoding ops headerp content (C.sinkHandle handle)
 
 
+-- | Maps given CSV data and sinks via the given sink.
 runMapperWithSink
   :: MonadIO io
   => Char                                                    -- ^ Delimiter
-  -> [FieldMapper]                                         -- ^ Field operators
+  -> Maybe String                                            -- ^ Optional source text encoding
+  -> [FieldMapper]                                           -- ^ Field operators
   -> Bool                                                    -- ^ Indicates if we want the header in the output
-  -> BL.ByteString                                           -- ^ CSV contents
+  -> BL.ByteString                                           -- ^ CSV data
   -> ConduitT B.ByteString Void (HabularaT () Integer io) () -- ^ Sink
   -> io (Either HabularaError ((), Integer))
-runMapperWithSink delim ops headerP content = runHabularaConduit () 0 conduit
+runMapperWithSink delim encoding ops headerP content = runHabularaConduit () 0 conduit
   where
     header = V.fromList $ fmap (TE.encodeUtf8 . fst) ops
-    habularaRecordsDecode = sourceCassavaRecordsContents delim content
+    habularaRecordsDecode = sourceCassavaRecordsContents delim encoding content
     habularaRecordsOperate = C.mapM (\x -> modify' (1 +) >> mapRecord ops x)
     habularaRecordsEncode = conduitEncode header headerP
     conduit = habularaRecordsDecode .| habularaRecordsOperate .| habularaRecordsEncode

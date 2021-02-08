@@ -1,5 +1,5 @@
 name:                habulara
-version:             0.0.0.2
+version:             0.0.0.3
 github:              "telostat/habulara"
 license:             BSD3
 author:              "Vehbi Sinan Tunalioglu"
@@ -26,6 +26,8 @@ dependencies:
 - bytestring
 - cassava
 - conduit
+- containers
+- iconv
 - mtl
 - scientific
 - text

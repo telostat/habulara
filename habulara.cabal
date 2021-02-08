@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a4c34310d9ecee3092023313105a975da069f7c3329d506c2711dcb26744a4da
+-- hash: 71b0e272c45f1eb72a5de5646ad633394af86aa0f7c2d84fa992b8760670d42f
 
 name:           habulara
-version:        0.0.0.2
+version:        0.0.0.3
 synopsis:       Toolkit for Processing Tabular Data
 description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 category:       Text, CSV
@@ -60,6 +60,8 @@ library
     , bytestring
     , cassava
     , conduit
+    , containers
+    , iconv
     , mtl
     , scientific
     , text
@@ -82,7 +84,9 @@ executable habulara
     , bytestring
     , cassava
     , conduit
+    , containers
     , habulara
+    , iconv
     , mtl
     , optparse-applicative
     , scientific
@@ -109,8 +113,10 @@ test-suite habulara-doctest
     , bytestring
     , cassava
     , conduit
+    , containers
     , doctest
     , habulara
+    , iconv
     , mtl
     , scientific
     , text
@@ -137,7 +143,9 @@ test-suite habulara-test
     , bytestring
     , cassava
     , conduit
+    , containers
     , habulara
+    , iconv
     , mtl
     , quickcheck-instances
     , scientific

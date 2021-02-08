@@ -3,12 +3,16 @@ module Data.Habulara.Dsl.Operators where
 import           Data.Aeson                   ((.:), (.:?))
 import qualified Data.Aeson                   as Aeson
 import qualified Data.Aeson.Types             as Aeson.Types
+import           Data.Bifunctor               (bimap)
 import           Data.Char                    (toLower, toUpper)
 import           Data.Habulara.Core           (Value)
 import           Data.Habulara.Core.Mapping   (ValueMapperT)
 import qualified Data.Habulara.Core.Operation as O
+import qualified Data.HashMap.Strict          as HM
+import qualified Data.Map.Strict              as M
 import           Data.Maybe                   (fromMaybe)
 import           Data.Scientific              (Scientific)
+import qualified Data.Set                     as S
 import qualified Data.Text                    as T
 import qualified Data.Vector                  as V
 import           Text.Read                    (readMaybe)
@@ -61,6 +65,9 @@ data Op1 =
   | TakeEnd !Int
   | Drop !Int
   | DropEnd !Int
+  | Member ![T.Text]
+  | Oneof ![T.Text]
+  | Translate ![(T.Text, T.Text)]
   deriving (Show)
 
 
@@ -85,7 +92,28 @@ instance Aeson.FromJSON Op1 where
     [Aeson.String "takeEnd"      , Aeson.Number x] -> pure $ TakeEnd (floor x)
     [Aeson.String "drop"         , Aeson.Number x] -> pure $ Drop (floor x)
     [Aeson.String "dropEnd"      , Aeson.Number x] -> pure $ DropEnd (floor x)
+    [Aeson.String "member"       , Aeson.Array  x] -> withAesonStringArray Member x
+    [Aeson.String "oneof"        , Aeson.Array  x] -> withAesonStringArray Oneof x
+    [Aeson.String "translate"    , Aeson.Object x] -> withAesonStringObject Translate x
     _                                              -> fail $ "Unknown Op1 spec: " <> show v
+
+
+withAesonStringArray :: MonadFail m => ([T.Text] -> a) -> V.Vector Aeson.Value -> m a
+withAesonStringArray f vs = f <$> ensureStrings vs
+  where
+    ensureStrings = mapM ensureString . V.toList
+    ensureString (Aeson.String v) = pure v
+    ensureString x                = fail $ "Expected string, received: " <> show x
+
+
+withAesonStringObject :: MonadFail m => ([(T.Text, T.Text)] -> a) -> HM.HashMap T.Text Aeson.Value -> m a
+withAesonStringObject f vs = f <$> ensureStrings vs
+  where
+    ensureStrings = mapM ensureString . HM.toList
+
+    ensureString (k, Aeson.String v) = pure (k, v)
+    ensureString (k, x)              = fail $ "Expected string, received for: " <> show k <> " value: " <> show x
+
 
 
 data Op2 = SplitIx !Int !T.Text deriving (Show)
@@ -139,6 +167,9 @@ toOperator (OpN1 (Take x))         = O.take (O.number $ fromIntegral x)
 toOperator (OpN1 (TakeEnd x))      = O.takeEnd (O.number $ fromIntegral x)
 toOperator (OpN1 (Drop x))         = O.drop (O.number $ fromIntegral x)
 toOperator (OpN1 (DropEnd x))      = O.dropEnd (O.number $ fromIntegral x)
+toOperator (OpN1 (Member x))       = O.member (S.fromList $ fmap O.text x)
+toOperator (OpN1 (Oneof x))        = O.oneof (S.fromList $ fmap O.text x)
+toOperator (OpN1 (Translate x))    = O.translate (M.fromList $ fmap (bimap O.text O.text) x)
 toOperator (OpN2 (SplitIx x y))    = O.splitIx (O.number $ fromIntegral x) (O.text y)
 
 

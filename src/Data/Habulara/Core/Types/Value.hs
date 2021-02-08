@@ -98,7 +98,7 @@ instance Cassava.ToField Value where
 
 
 -- | A convenience class for the interplay between native and 'Value' types.
-class (Eq a) => Valuable a where
+class (Eq a, Show a) => Valuable a where
   -- | Identity value.
   identity :: a
 
@@ -134,6 +134,10 @@ class (Eq a) => Valuable a where
   raiseReadError :: MonadError HabularaError m => String -> B.ByteString -> m a
   raiseReadError t x = throwError . HabularaErrorRead $ "Can not read " <> t <> " from: " <> BC.unpack x
 
+  -- | Displays the value as a text, usually to be displayed to end users.
+  display :: a -> T.Text
+  display = T.pack . show
+
 
 -- | 'Valuable' instance for 'Value' type.
 --
@@ -160,6 +164,13 @@ instance Valuable Value where
   toByteString (VTime t)   = toByteString t
 
   fromByteString = pure . maybe VEmpty VText . NEV.nonEmpty . TE.decodeUtf8
+
+  display VEmpty      = "<EMPTY>"
+  display (VText t)   = display t
+  display (VNumber d) = display d
+  display (VBool b)   = display b
+  display (VDate d)   = display d
+  display (VTime t)   = display t
 
 
 -- | 'Valuable' instance for @'NonEmpty' 'T.Text'@ type.
@@ -188,6 +199,8 @@ instance Valuable (NEV.NonEmpty T.Text) where
   toByteString = toByteString . NEV.unpack
 
   fromByteString = fromByteString >=> liftMaybe (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value") . NEV.nonEmpty
+
+  display = NEV.unpack
 
 
 -- | 'Valuable' instance for 'T.Text' type.

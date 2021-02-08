@@ -19,6 +19,7 @@ description: >
 
   - both **temperatureF** and **precipitation** are computed values, and **temperatureC** is a type-guarded value.
 delimiter: ","
+encoding: ISO-8859-9
 fields:
   - label: wsid
     title: Weather Station ID

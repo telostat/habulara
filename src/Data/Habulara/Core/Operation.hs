@@ -22,8 +22,10 @@ import           Data.Habulara.Core.Mapping        (MapperEnvir, MapperState, as
 import           Data.Habulara.Core.Types.Class    (HabularaError(..), HabularaT, liftMaybe, runHabularaIO)
 import qualified Data.Habulara.Core.Types.NonEmpty as NEV
 import           Data.Habulara.Core.Types.Value    (Valuable(..), Value(..))
+import qualified Data.Map.Strict                   as M
 import           Data.Maybe                        (fromMaybe)
 import           Data.Scientific                   (Scientific, toRealFloat)
+import qualified Data.Set                          as S
 import qualified Data.Text                         as T
 import           Data.Time                         (Day, LocalTime, parseTimeM)
 import qualified Data.Time
@@ -745,6 +747,67 @@ splitIx :: MonadError HabularaError m => Value -> Value -> Value -> m Value
 splitIx n x y = withNumber (\i -> withText (\s -> withText (liftText . attempt i s) y) x) n
   where
     attempt i s t = fromMaybe "" $ at (floor i) (T.splitOn s t)
+
+
+-- * Conditionals
+--
+-- $operatorsConditionals
+
+
+-- | Checks a condition for a given 'Value' and returns it if the condition
+-- holds true, raises given error otherwise.
+--
+-- >>> testopV $ guard "Expecting a or b" (member (S.fromList ["a", "b"])) "a"
+-- Right (VText (MkNonEmpty {unpack = "a"}))
+-- >>> testopV $ guard "Expecting a or b" (member (S.fromList ["a", "b"])) "c"
+-- Left (HabularaErrorOperation "Expecting a or b")
+guard :: MonadError HabularaError m => T.Text -> (Value -> m Value) -> Value -> m Value
+guard e a v = a v >>= withBool (\x -> if x then pure v else raiseOperationError e)
+
+
+-- | Checks if given 'Value' is in the given set of 'Value's.
+--
+-- >>> testopV $ member (S.fromList ["a", "b"]) "a"
+-- Right (VBool True)
+-- >>> testopV $ member (S.fromList ["a", "b"]) "c"
+-- Right (VBool False)
+member :: MonadError HabularaError m => S.Set Value -> Value -> m Value
+member s v = liftBool $ S.member v s
+
+
+-- | Checks if given 'Value' is in the given set of 'Value's. If true, returns
+-- the 'Value', raises error otherwise.
+--
+-- >>> testopV $ oneof (S.fromList ["a", "b"]) "a"
+-- Right (VText (MkNonEmpty {unpack = "a"}))
+-- >>> testopV $ oneof (S.fromList ["a", "b"]) "c"
+-- Left (HabularaErrorOperation "Expected one of a,b but received c")
+--
+-- >>> testopV $ oneof (S.fromList ["a", "b", number 1]) (number 1)
+-- Right (VNumber 1.0)
+oneof :: MonadError HabularaError m => S.Set Value -> Value -> m Value
+oneof s v = guard errmsg (member s) v
+  where
+    errmsg = "Expected one of " <> T.intercalate "," (map display $ S.toList s) <> " but received " <> display v
+
+
+-- * Value mappers
+--
+-- $operatorsValueMappers
+
+
+-- | Attempts to translate the given 'Value' from a 'Value' dictionary.
+--
+-- >>> testopV $ translate (M.fromList [("Yes", true), ("No", false)]) "Yes"
+-- Right (VBool True)
+-- >>> testopV $ translate (M.fromList [("Yes", true), ("No", false)]) "No"
+-- Right (VBool False)
+-- >>> testopV $ translate (M.fromList [("Yes", true), ("No", false)]) "zartzurt"
+-- Left (HabularaErrorOperation "Unexpected value encountered during translation: zartzurt")
+translate :: MonadError HabularaError m => M.Map Value Value -> Value -> m Value
+translate d v = case M.lookup v d of
+  Nothing -> raiseOperationError $ "Unexpected value encountered during translation: " <> display v
+  Just tv -> pure tv
 
 
 -- * Helpers
