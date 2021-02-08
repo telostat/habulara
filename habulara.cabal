@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 210b2d025a2143e59e96fe92c65e02466bd16965539971ed21d9275a80922da7
+-- hash: 71b0e272c45f1eb72a5de5646ad633394af86aa0f7c2d84fa992b8760670d42f
 
 name:           habulara
 version:        0.0.0.3
@@ -60,6 +60,7 @@ library
     , bytestring
     , cassava
     , conduit
+    , containers
     , iconv
     , mtl
     , scientific
@@ -83,6 +84,7 @@ executable habulara
     , bytestring
     , cassava
     , conduit
+    , containers
     , habulara
     , iconv
     , mtl
@@ -111,6 +113,7 @@ test-suite habulara-doctest
     , bytestring
     , cassava
     , conduit
+    , containers
     , doctest
     , habulara
     , iconv
@@ -140,6 +143,7 @@ test-suite habulara-test
     , bytestring
     , cassava
     , conduit
+    , containers
     , habulara
     , iconv
     , mtl
