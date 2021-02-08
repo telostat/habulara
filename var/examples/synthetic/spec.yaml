@@ -1,0 +1,27 @@
+name: Synthetic Data for Habulara Testing
+description: >
+  This is a synthetic dataset for testing Habulara.
+delimiter: ","
+fields:
+  - label: id
+  - label: name
+  - label: valid
+    operation:
+      - name: select
+        args: ["valid"]
+      - name: upper
+      - name: translate
+        args: [{"YES": "True", "NO": "False"}]
+  - label: type
+    operation:
+      - name: select
+        args: ["type"]
+      - name: upper
+      - name: oneof
+        args: [["X1", "X2", "Y1", "Y2"]]
+  - label: x
+    operation:
+      - name: peek
+        args: ["type"]
+      - name: member
+        args: [["X1", "X2"]]
