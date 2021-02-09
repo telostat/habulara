@@ -84,6 +84,7 @@ Finally, checkout to develop and bump the version:
 
 ```
 git checkout develop
+git rebase main
 export TAG_IN_DEVELOPMENT="0.0.0.4"
 ## Edit package.yaml and then:
 git commit -am "chore: bump development version to ${TAG_IN_DEVELOPMENT}"
