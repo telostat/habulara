@@ -1,23 +1,21 @@
 {-# LANGUAGE LambdaCase #-}
 module Data.Habulara.Inspect.Internal where
 
-import           Control.Monad                   (mzero)
-import           Control.Monad.IO.Class          (MonadIO, liftIO)
-import qualified Data.Aeson                      as Aeson
-import qualified Data.ByteString.Char8           as BC
-import qualified Data.ByteString.Lazy            as BL
-import qualified Data.ByteString.Lazy.Char8      as BLC
-import           Data.Csv                        ((.:))
-import qualified Data.Csv                        as Csv
-import           Data.Habulara.Dsl.Specification (FieldSpec(..), MappingSpec(..))
-import qualified Data.HashMap.Strict             as HM
-import qualified Data.List.NonEmpty              as NE
-import           Data.Maybe                      (fromMaybe)
-import qualified Data.Text                       as T
-import qualified Data.Vector                     as V
-import qualified Data.Yaml                       as YAML
-import           System.Exit                     (ExitCode(..))
-import qualified System.Process.Typed            as P
+import           Control.Monad              (mzero)
+import           Control.Monad.IO.Class     (MonadIO, liftIO)
+import qualified Data.Aeson                 as Aeson
+import qualified Data.ByteString.Char8      as BC
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
+import           Data.Csv                   ((.:))
+import qualified Data.Csv                   as Csv
+import qualified Data.HashMap.Strict        as HM
+import           Data.Maybe                 (fromMaybe)
+import qualified Data.Text                  as T
+import qualified Data.Vector                as V
+import qualified Data.Yaml                  as YAML
+import           System.Exit                (ExitCode(..))
+import qualified System.Process.Typed       as P
 
 
 inspect :: MonadIO m => FilePath -> m ExitCode
@@ -49,8 +47,8 @@ prepareSpec ss = Aeson.Object $ HM.fromList
       ]) : mkFields xs
 
     mkOps x = case statType x of
-      StatFieldTypeFloat   -> [select, Aeson.Object $ HM.fromList [("name", "asNumber")]]
-      StatFieldTypeInteger -> [select, Aeson.Object $ HM.fromList [("name", "asNumber")]]
+      StatFieldTypeFloat   -> [select, Aeson.Object $ HM.fromList [("name", "asText")]]
+      StatFieldTypeInteger -> [select, Aeson.Object $ HM.fromList [("name", "asText")]]
       StatFieldTypeUnicode -> [select, Aeson.Object $ HM.fromList [("name", "asText")]]
       StatFieldTypeNULL    -> [select, Aeson.Object $ HM.fromList [("name", "asEmpty")]]
       where
