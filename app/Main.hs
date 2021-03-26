@@ -1,13 +1,14 @@
 module Main where
 
-import qualified Data.ByteString.Lazy as BL
-import           Data.Habulara.Dsl    (runIntoHandle)
-import           Data.Version         (showVersion)
-import qualified Options.Applicative  as OA
-import           Paths_habulara       (version)
-import           System.Exit          (ExitCode(..), exitWith)
-import           System.IO            (Handle, IOMode(..), hPutStrLn, openFile, stderr, stdin, stdout)
-import           Text.Printf          (printf)
+import qualified Data.ByteString.Lazy           as BL
+import           Data.Habulara.Dsl              (runIntoHandle)
+import           Data.Habulara.Inspect.Internal (inspect)
+import           Data.Version                   (showVersion)
+import qualified Options.Applicative            as OA
+import           Paths_habulara                 (version)
+import           System.Exit                    (ExitCode(..), exitWith)
+import           System.IO                      (Handle, IOMode(..), hPutStrLn, openFile, stderr, stdin, stdout)
+import           Text.Printf                    (printf)
 
 
 -- | Main program entry point.
@@ -17,10 +18,8 @@ main = exitWith =<< (cliProgram =<< OA.execParser cliProgramParserInfo)
 
 -- | CLI program.
 cliProgram :: CliArguments -> IO ExitCode
-cliProgram (CliArguments (CommandProcess (sfp, mifp, mofp))) = process sfp (mkFp mifp) (mkFp mofp)
-  where
-    mkFp (Just "-") = Nothing
-    mkFp x          = x
+cliProgram (CliArguments (CommandInspect ifp))               = inspect ifp
+cliProgram (CliArguments (CommandProcess (sfp, mifp, mofp))) = process sfp (mkFilepath mifp) (mkFilepath mofp)
 
 
 -- | Processes given CSV data with given specification.
@@ -49,8 +48,14 @@ processAux ms mi mo = do
 -- | CLI arguments parser.
 parserProgramOptions :: OA.Parser CliArguments
 parserProgramOptions = CliArguments <$> OA.hsubparser
-  ( OA.command "process" (OA.info (CommandProcess <$> optsProcess) (OA.progDesc "Process given CSV data with given specification"))
+  (  OA.command "inspect" (OA.info (CommandInspect <$> optsInspect) (OA.progDesc "Inspect the given file and produce a specification file"))
+  <> OA.command "process" (OA.info (CommandProcess <$> optsProcess) (OA.progDesc "Process given CSV data with given specification"))
   )
+
+
+-- | @inspect@ command arguments parser.
+optsInspect :: OA.Parser FilePath
+optsInspect = OA.strOption (OA.long "file" <> OA.metavar "FILE" <> OA.value "-" <> OA.help "CSV file (`-` for stdin, default)")
 
 
 -- | @process@ command arguments parser.
@@ -62,7 +67,9 @@ optsProcess = (,,)
 
 
 -- | Registry of commands.
-newtype Command = CommandProcess (FilePath, Maybe FilePath, Maybe FilePath)
+data Command =
+    CommandInspect FilePath
+  | CommandProcess (FilePath, Maybe FilePath, Maybe FilePath)
   deriving Show
 
 
@@ -80,3 +87,26 @@ cliProgramParserInfo = OA.info
 -- | Version option.
 parserVersionOption :: OA.Parser (a -> a)
 parserVersionOption = OA.infoOption (showVersion version) (OA.long "version" <> OA.help "Show version")
+
+
+-------------
+-- HELPERS --
+-------------
+
+
+-- | If the given filepath is '-', this should be considered as STDIN, hence 'Nothing'.
+--
+-- >>> mkFilepath Nothing
+-- Nothing
+-- >>> mkFilepath (Just "")
+-- Nothing
+-- >>> mkFilepath (Just "-")
+-- Nothing
+-- >>> mkFilepath (Just "/tmp/a.csv")
+-- Just "/tmp/a.csv"
+mkFilepath :: Maybe String -> Maybe String
+mkFilepath = maybe Nothing go
+  where
+    go ""  = Nothing
+    go "-" = Nothing
+    go x   = Just x
