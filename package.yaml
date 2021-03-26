@@ -32,6 +32,7 @@ dependencies:
 - scientific
 - text
 - time
+- typed-process
 - unordered-containers
 - vector
 - yaml
