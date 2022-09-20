@@ -34,6 +34,11 @@ pkgs.mkShell {
     pkgs.git-chglog
     pkgs.upx
 
+    ## Development and testing stuff:
+    (pkgs.rWrapper.override
+      { packages = with pkgs.rPackages; [ stringi ]; }
+    )
+
     ## Haskell stuff:
     ghc
     pkgs.cabal-install
