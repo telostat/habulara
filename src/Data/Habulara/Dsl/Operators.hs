@@ -2,13 +2,13 @@ module Data.Habulara.Dsl.Operators where
 
 import           Data.Aeson                   ((.:), (.:?))
 import qualified Data.Aeson                   as Aeson
+import qualified Data.Aeson.KeyMap            as Aeson.KeyMap
 import qualified Data.Aeson.Types             as Aeson.Types
-import           Data.Bifunctor               (bimap)
+import           Data.Bifunctor               (bimap, first)
 import           Data.Char                    (toLower, toUpper)
 import           Data.Habulara.Core           (Value)
 import           Data.Habulara.Core.Mapping   (ValueMapperT)
 import qualified Data.Habulara.Core.Operation as O
-import qualified Data.HashMap.Strict          as HM
 import qualified Data.Map.Strict              as M
 import           Data.Maybe                   (fromMaybe)
 import           Data.Scientific              (Scientific)
@@ -106,13 +106,13 @@ withAesonStringArray f vs = f <$> ensureStrings vs
     ensureString x                = fail $ "Expected string, received: " <> show x
 
 
-withAesonStringObject :: MonadFail m => ([(T.Text, T.Text)] -> a) -> HM.HashMap T.Text Aeson.Value -> m a
+withAesonStringObject :: MonadFail m => ([(T.Text, T.Text)] -> a) -> Aeson.KeyMap.KeyMap Aeson.Value -> m a
 withAesonStringObject f vs = f <$> ensureStrings vs
   where
-    ensureStrings = mapM ensureString . HM.toList
+    ensureStrings = mapM ensureString . fmap (first Aeson.toJSON) . Aeson.KeyMap.toList
 
-    ensureString (k, Aeson.String v) = pure (k, v)
-    ensureString (k, x)              = fail $ "Expected string, received for: " <> show k <> " value: " <> show x
+    ensureString (Aeson.String k, Aeson.String v) = pure (k, v)
+    ensureString (k, x)                           = fail $ "Expected string, received for: " <> show k <> " value: " <> show x
 
 
 

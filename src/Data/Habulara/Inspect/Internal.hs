@@ -4,12 +4,12 @@ module Data.Habulara.Inspect.Internal where
 import           Control.Monad              (mzero)
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import qualified Data.Aeson                 as Aeson
+import qualified Data.Aeson.KeyMap          as Aeson.KeyMap
 import qualified Data.ByteString.Char8      as BC
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import           Data.Csv                   ((.:))
 import qualified Data.Csv                   as Csv
-import qualified Data.HashMap.Strict        as HM
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text                  as T
 import qualified Data.Vector                as V
@@ -29,7 +29,7 @@ inspect fp = runXsv fp >>= \case
 
 
 prepareSpec :: [Stat] -> Aeson.Value
-prepareSpec ss = Aeson.Object $ HM.fromList
+prepareSpec ss = Aeson.Object $ Aeson.KeyMap.fromList
   [ ("name", Aeson.String "<NAME>")
   , ("description", Aeson.String "<DESCRIPTION>")
   , ("delimiter", Aeson.String ",")
@@ -39,7 +39,7 @@ prepareSpec ss = Aeson.Object $ HM.fromList
   where
     mkFields :: [Stat] -> [Aeson.Value]
     mkFields [] = []
-    mkFields (x : xs) = Aeson.Object (HM.fromList
+    mkFields (x : xs) = Aeson.Object (Aeson.KeyMap.fromList
       [ ("label", Aeson.String $ statField x)
       , ("title", Aeson.String $ statField x)
       , ("description", Aeson.String $ T.pack $ mkDescription x)
@@ -47,12 +47,12 @@ prepareSpec ss = Aeson.Object $ HM.fromList
       ]) : mkFields xs
 
     mkOps x = case statType x of
-      StatFieldTypeFloat   -> [select, Aeson.Object $ HM.fromList [("name", "asText")]]
-      StatFieldTypeInteger -> [select, Aeson.Object $ HM.fromList [("name", "asText")]]
-      StatFieldTypeUnicode -> [select, Aeson.Object $ HM.fromList [("name", "asText")]]
-      StatFieldTypeNULL    -> [select, Aeson.Object $ HM.fromList [("name", "asEmpty")]]
+      StatFieldTypeFloat   -> [select, Aeson.Object $ Aeson.KeyMap.fromList [("name", "asText")]]
+      StatFieldTypeInteger -> [select, Aeson.Object $ Aeson.KeyMap.fromList [("name", "asText")]]
+      StatFieldTypeUnicode -> [select, Aeson.Object $ Aeson.KeyMap.fromList [("name", "asText")]]
+      StatFieldTypeNULL    -> [select, Aeson.Object $ Aeson.KeyMap.fromList [("name", "asEmpty")]]
       where
-        select = Aeson.Object $ HM.fromList [("name", Aeson.String "select"), ("args", Aeson.Array $ V.fromList [Aeson.String $ statField x])]
+        select = Aeson.Object $ Aeson.KeyMap.fromList [("name", Aeson.String "select"), ("args", Aeson.Array $ V.fromList [Aeson.String $ statField x])]
 
     mkDescription x =
          "- Name:         " <> T.unpack (statField x) <> "\n"
