@@ -2,12 +2,12 @@
 
 module Data.Habulara.Core.Types.NonEmpty where
 
-import Data.Maybe  (fromMaybe)
-import Data.String (IsString(..))
+import Data.Maybe (fromMaybe)
+import Data.String (IsString (..))
 
 
 -- | Provides a newtype for forcing non-empty values.
-newtype NonEmpty a = MkNonEmpty { unpack :: a } deriving (Eq, Ord, Show)
+newtype NonEmpty a = MkNonEmpty {unpack :: a} deriving (Eq, Ord, Show)
 
 
 -- | 'Semigroup' instance for 'NonEmpty' type.

@@ -2,21 +2,21 @@
 
 module Data.Habulara.Core.Internal.Cassava where
 
-import qualified Codec.Text.IConv               as Iconv
-import           Control.Monad                  (when, (>=>))
-import           Control.Monad.Except           (MonadError(throwError))
-import           Control.Monad.IO.Class         (MonadIO(liftIO))
-import qualified Data.ByteString                as B
-import qualified Data.ByteString.Builder        as B.Builder
-import qualified Data.ByteString.Lazy           as BL
-import           Data.Char                      (ord)
-import           Data.Conduit                   (ConduitT, yield)
-import qualified Data.Conduit.Combinators       as C
-import qualified Data.Csv                       as Cassava
-import qualified Data.Csv.Builder               as Cassava.Builder
-import qualified Data.Csv.Streaming             as Cassava.Streaming
-import           Data.Habulara.Core.Types.Class (HabularaError(HabularaErrorCsv))
-import           System.IO                      (Handle, IOMode(ReadMode), hClose, openFile)
+import qualified Codec.Text.IConv as Iconv
+import Control.Monad (when, (>=>))
+import Control.Monad.Except (MonadError (throwError))
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as B.Builder
+import qualified Data.ByteString.Lazy as BL
+import Data.Char (ord)
+import Data.Conduit (ConduitT, yield)
+import qualified Data.Conduit.Combinators as C
+import qualified Data.Csv as Cassava
+import qualified Data.Csv.Builder as Cassava.Builder
+import qualified Data.Csv.Streaming as Cassava.Streaming
+import Data.Habulara.Core.Types.Class (HabularaError (HabularaErrorCsv))
+import System.IO (Handle, IOMode (ReadMode), hClose, openFile)
 
 
 sourceCassavaRecordsFilePath
@@ -48,7 +48,7 @@ sourceCassavaRecordsContents
 sourceCassavaRecordsContents delim encoding content =
   either (throwError . HabularaErrorCsv) (sourceCassavaStream . snd) dresult
   where
-    options = Cassava.defaultDecodeOptions { Cassava.decDelimiter = fromIntegral (ord delim) }
+    options = Cassava.defaultDecodeOptions {Cassava.decDelimiter = fromIntegral (ord delim)}
     decoded = maybe content (\e -> Iconv.convert e "UTF-8" content) encoding
     dresult = Cassava.Streaming.decodeByNameWith options decoded
 
@@ -57,8 +57,8 @@ sourceCassavaStream
   :: (MonadError HabularaError m, Cassava.FromNamedRecord a)
   => Cassava.Streaming.Records a
   -> ConduitT i a m ()
-sourceCassavaStream (Cassava.Streaming.Nil Nothing _)     = return ()
-sourceCassavaStream (Cassava.Streaming.Nil (Just err) _)  = throwError $ HabularaErrorCsv err
+sourceCassavaStream (Cassava.Streaming.Nil Nothing _) = return ()
+sourceCassavaStream (Cassava.Streaming.Nil (Just err) _) = throwError $ HabularaErrorCsv err
 sourceCassavaStream (Cassava.Streaming.Cons (Left err) _) = throwError $ HabularaErrorCsv err
 sourceCassavaStream (Cassava.Streaming.Cons (Right r) rs) = yield r >> sourceCassavaStream rs
 

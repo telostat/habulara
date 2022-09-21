@@ -9,8 +9,20 @@ let
   ## Pinned nixpkgs:
   pkgs = import sources.nixpkgs { };
 
+  ## Get fourmolu source:
+  source-fourmolu = builtins.fetchTarball {
+    url = "https://hackage.haskell.org/package/fourmolu-0.8.2.0/fourmolu-0.8.2.0.tar.gz";
+    sha256 = "0m6hi8hr1lhy3l5yrnk7dllhwmp12gpkykxb2szal5sapd9qsdh9";
+  };
+
   ## Get the haskell set:
-  haskell = pkgs.haskell.packages.${compiler};
+  haskell = pkgs.haskell.packages.${compiler}.override {
+    overrides = self: super: with pkgs.haskell.lib; {
+      fourmolu = super.callCabal2nixWithOptions "fourmolu" source-fourmolu "--no-check" { };
+      Cabal = pkgs.haskellPackages.Cabal_3_6_3_0;
+      ghc-lib-parser = pkgs.haskellPackages.ghc-lib-parser_9_2_2_20220307;
+    };
+  };
 
   ## Get this package:
   thisPackage = haskell.callCabal2nixWithOptions "habulara" ./. "--no-haddock" { };
@@ -41,6 +53,7 @@ pkgs.mkShell {
 
     ## Haskell stuff:
     ghc
+    haskell.fourmolu
     pkgs.cabal-install
     pkgs.cabal2nix
     pkgs.haskell-language-server

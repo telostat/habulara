@@ -1,5 +1,6 @@
-module Data.Habulara
-  ( module Core
-  ) where
+module Data.Habulara (
+  module Core,
+) where
 
 import Data.Habulara.Core as Core
+

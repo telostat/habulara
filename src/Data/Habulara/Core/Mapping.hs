@@ -1,26 +1,27 @@
-{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE TupleSections    #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Habulara.Core.Mapping where
 
-import           Control.Monad.Except       (MonadError(throwError))
-import           Control.Monad.IO.Class     (MonadIO(..))
-import           Control.Monad.Reader       (MonadReader)
-import           Control.Monad.Reader.Class (asks)
-import           Control.Monad.State        (MonadState(..), gets, modify')
-import           Data.Habulara.Core         (HabularaT, Label, MonadHabulara, Record, Value, runHabularaT)
-import qualified Data.HashMap.Strict        as HM
+import Control.Monad.Except (MonadError (throwError))
+import Control.Monad.IO.Class (MonadIO (..))
+import Control.Monad.Reader (MonadReader)
+import Control.Monad.Reader.Class (asks)
+import Control.Monad.State (MonadState (..), gets, modify')
+import Data.Habulara.Core (HabularaT, Label, MonadHabulara, Record, Value, runHabularaT)
+import qualified Data.HashMap.Strict as HM
 
 
 -- * Types
+
+
 --
 -- In essence, an record or value mapper is defined in a 'MonadHabulara' context
 -- ('MapperM') with an environment 'MapperEnvir' and state 'MapperState'.
 --
--- $types
-
+-- \$types
 
 -- | 'MonadHabulara' constraint for record or value mapping.
 type MapperM m = MonadHabulara MapperEnvir MapperState m
@@ -53,9 +54,10 @@ type FieldMapper = (Label, ValueMapperT)
 
 
 -- * Mapping
---
--- $mapping
 
+
+--
+-- \$mapping
 
 -- | Maps a 'Record' to a 'Record' as per given list of 'FieldMapper' values
 -- (field label - field value mapping).
@@ -64,7 +66,7 @@ type FieldMapper = (Label, ValueMapperT)
 -- whereby the state stands for the current record number.
 mapRecord :: MonadHabulara r Integer m => [FieldMapper] -> Record -> m Record
 mapRecord ops record = do
-  nenvar <- gets (, record)
+  nenvar <- gets (,record)
   result <- liftIO $ runHabularaT nenvar HM.empty (buildRecord ops)
   either throwError (pure . fst) result
 
@@ -77,14 +79,15 @@ mapRecord ops record = do
 -- high level function using this function and constrained by 'MapperM'
 -- providing a state monad for the record number being mapped.
 buildRecord :: MapperM m => [(Label, m Value)] -> m Record
-buildRecord []             = get
+buildRecord [] = get
 buildRecord ((l, op) : xs) = op >>= modify' . HM.insert l >> buildRecord xs
 
 
 -- * Helpers
---
--- $helpers
 
+
+--
+-- \$helpers
 
 -- | Attempts to find the value associated with the given label in the operation
 -- environment and applies the given function to it.
