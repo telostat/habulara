@@ -18,7 +18,7 @@ files in a declarative fashion.
 ```
 git clone git@github.com:telostat/habulara.git
 cd habulara
-stack install
+nix-env -i -f default.nix
 ```
 
 ## Usage
@@ -60,6 +60,9 @@ included in the source-code.
 ## Development
 
 ### Releasing
+
+> **WARNING:** This section is outdated. It should be rewritten as we
+> have moved away from stack to Nix.
 
 ```
 git checkout main

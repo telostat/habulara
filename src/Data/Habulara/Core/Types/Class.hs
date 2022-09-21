@@ -1,71 +1,79 @@
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Data.Habulara.Core.Types.Class where
 
-import           Control.Applicative    (Alternative(empty, (<|>)))
-import           Control.Monad.Except   (ExceptT, MonadError(..), MonadPlus(..), runExceptT)
-import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Control.Monad.Reader   (MonadReader, ReaderT(..))
-import           Control.Monad.State    (MonadState, StateT(..))
-import qualified Data.Text              as T
-import           System.IO              (hPutStrLn, stderr)
+import Control.Applicative (Alternative (empty, (<|>)))
+import Control.Monad.Except (ExceptT, MonadError (..), MonadPlus (..), runExceptT)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Reader (MonadReader, ReaderT (..))
+import Control.Monad.State (MonadState, StateT (..))
+import qualified Data.Text as T
+import System.IO (hPutStrLn, stderr)
 
 
 -- * Error Type
+
+
 --
--- $errorType
+-- \$errorType
 
 -- | Habulara error type.
 --
 -- __Note[vst]:__ Do we want to make the 'HabularaError' extensible? This will
 -- introduce some complexity to 'MonadHabulara' which we may wish to avoid.
-data HabularaError =
-    HabularaErrorEmpty
+data HabularaError
+  = HabularaErrorEmpty
   | HabularaErrorCsv String
   | HabularaErrorOperation T.Text
   | HabularaErrorRead String
   | HabularaErrorSimple T.Text
   | HabularaErrorValueConversion String
-  deriving Show
+  deriving (Show)
 
 
 -- * Monad
---
--- $monad
 
+
+--
+-- \$monad
 
 -- ** Definition
---
--- $monadDefinition
 
+
+--
+-- \$monadDefinition
 
 -- | Core 'Monad' for Habulara programs.
-class ( Functor m
-      , Applicative m
-      , Alternative m
-      , Monad m
-      , MonadIO m
-      , MonadReader r m
-      , MonadState s m
-      , MonadError HabularaError m
-      ) => MonadHabulara r s m | m -> r s where
-
+class
+  ( Functor m
+  , Applicative m
+  , Alternative m
+  , Monad m
+  , MonadIO m
+  , MonadReader r m
+  , MonadState s m
+  , MonadError HabularaError m
+  ) =>
+  MonadHabulara r s m
+    | m -> r s
+  where
   -- | Logs a debug message.
   debug :: T.Text -> m ()
 
 
 -- ** Instance
---
--- $monadInstance
 
+
+--
+-- \$monadInstance
 
 -- | Habulara monad based on a transformer stack.
 --
 -- @TODO:@ Revisit instance declarations.
-newtype HabularaT r s m a = HabularaT { unHabularaT :: ReaderT r (StateT s (ExceptT HabularaError m)) a }
+newtype HabularaT r s m a = HabularaT {unHabularaT :: ReaderT r (StateT s (ExceptT HabularaError m)) a}
   deriving
     ( Functor
     , Applicative
@@ -76,21 +84,26 @@ newtype HabularaT r s m a = HabularaT { unHabularaT :: ReaderT r (StateT s (Exce
     , MonadError HabularaError
     )
 
+
 instance (Monad m) => Alternative (HabularaT r s m) where
   empty = mzero
   (<|>) = mplus
 
+
 instance (Monad m) => MonadPlus (HabularaT r s m) where
   mzero = throwError HabularaErrorEmpty
-  m0 `mplus` m1 = m0 `catchError` const m1  -- @TODO:@ Is it lawful in the first place?
+  m0 `mplus` m1 = m0 `catchError` const m1 -- @TODO:@ Is it lawful in the first place?
+
 
 instance (MonadIO m) => (MonadHabulara r s) (HabularaT r s m) where
   debug = liftIO . hPutStrLn stderr . T.unpack
 
 
 -- ** Runners
+
+
 --
--- $monadRunners
+-- \$monadRunners
 
 -- | Runs a 'HabularaT' in the given environement @r@ with the given initial
 -- state @s@.
@@ -127,9 +140,10 @@ runHabularaIO = runHabularaT
 
 
 -- * Helpers
---
--- $helpers
 
+
+--
+-- \$helpers
 
 -- | Lifts a 'Maybe' into @'MonadError' 'HabularaError' m@ context with a default 'HabularaError'
 liftMaybe :: MonadError HabularaError m => HabularaError -> Maybe a -> m a

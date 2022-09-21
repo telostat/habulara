@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 02ad258bbba0720eed6351841b6431e31ff9bd672cdc0cbd2feea79b5c2d1101
+-- hash: 3e70e84ed2a27c487a95219a3d89b97a6f23fa2aebc38f082b0438bfc99c53be
 
 name:           habulara
 version:        0.0.0.4
@@ -53,7 +53,8 @@ library
       Paths_habulara
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall
   build-depends:
       aeson
@@ -108,7 +109,7 @@ test-suite habulara-doctest
   other-modules:
       Paths_habulara
   hs-source-dirs:
-      ./.
+      ./
   ghc-options: -threaded
   build-depends:
       aeson
