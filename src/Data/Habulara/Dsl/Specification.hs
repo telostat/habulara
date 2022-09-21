@@ -56,7 +56,7 @@ runWithSpecIntoHandle :: MonadIO io => MappingSpec -> BL.ByteString -> Handle ->
 runWithSpecIntoHandle ms = runMapperIntoHandle delimiter encoding fops True
   where
     encoding = mappingSpecEncoding ms
-    compiler (FieldSpec l _ _ o) = compileOperator l (maybe [] NE.toList o)
+    compiler (FieldSpec l _ _ o) = compileOperator l (foldMap NE.toList o)
     delimiter = fromMaybe ',' (mappingSpecDelimiter ms)
     fops = fmap (fieldSpecLabel &&& compiler) (NE.toList $ mappingSpecFields ms)
 
@@ -65,5 +65,5 @@ runIntoHandle :: MonadIO io => BL.ByteString -> BL.ByteString -> Handle -> io (E
 runIntoHandle specContent dataContent handle = do
   let eSpec = readSpec specContent
   case eSpec of
-    Left err   -> pure $ Left $ HabularaErrorSimple $ T.pack err
+    Left err   -> pure . Left . HabularaErrorSimple $ T.pack err
     Right spec -> runWithSpecIntoHandle spec dataContent handle

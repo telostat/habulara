@@ -27,9 +27,8 @@ import           Data.Maybe                        (fromMaybe)
 import           Data.Scientific                   (Scientific, toRealFloat)
 import qualified Data.Set                          as S
 import qualified Data.Text                         as T
-import           Data.Time                         (Day, LocalTime, parseTimeM)
+import           Data.Time                         (Day, LocalTime, defaultTimeLocale, parseTimeM)
 import qualified Data.Time
-import           Data.Time.Format                  (defaultTimeLocale)
 import           Prelude                           hiding (and, drop, lookup, not, or, subtract, take)
 import qualified Prelude
 
@@ -788,7 +787,7 @@ member s v = liftBool $ S.member v s
 oneof :: MonadError HabularaError m => S.Set Value -> Value -> m Value
 oneof s v = guard errmsg (member s) v
   where
-    errmsg = "Expected one of " <> T.intercalate "," (map display $ S.toList s) <> " but received " <> display v
+    errmsg = "Expected one of " <> T.intercalate "," (display <$> S.toList s) <> " but received " <> display v
 
 
 -- * Value mappers

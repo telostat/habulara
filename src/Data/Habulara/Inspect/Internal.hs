@@ -25,7 +25,7 @@ inspect fp = runXsv fp >>= \case
     let estat = fmap (V.toList . snd) (Csv.decodeByName st) :: Either String [Stat]
     case estat of
       Left err -> liftIO (putStrLn err) >> pure (ExitFailure 2)
-      Right ss -> liftIO (BC.putStr $ YAML.encode $ prepareSpec ss) >> pure ExitSuccess
+      Right ss -> liftIO (BC.putStr . YAML.encode $ prepareSpec ss) >> pure ExitSuccess
 
 
 prepareSpec :: [Stat] -> Aeson.Value
@@ -34,7 +34,7 @@ prepareSpec ss = Aeson.Object $ Aeson.KeyMap.fromList
   , ("description", Aeson.String "<DESCRIPTION>")
   , ("delimiter", Aeson.String ",")
   , ("encoding", Aeson.String "utf-8")
-  , ("fields", Aeson.Array $ V.fromList $ mkFields ss)
+  , ("fields", Aeson.Array . V.fromList $ mkFields ss)
   ]
   where
     mkFields :: [Stat] -> [Aeson.Value]
@@ -42,8 +42,8 @@ prepareSpec ss = Aeson.Object $ Aeson.KeyMap.fromList
     mkFields (x : xs) = Aeson.Object (Aeson.KeyMap.fromList
       [ ("label", Aeson.String $ statField x)
       , ("title", Aeson.String $ statField x)
-      , ("description", Aeson.String $ T.pack $ mkDescription x)
-      , ("operation", Aeson.Array $ V.fromList $ mkOps x)
+      , ("description", Aeson.String . T.pack $ mkDescription x)
+      , ("operation", Aeson.Array . V.fromList $ mkOps x)
       ]) : mkFields xs
 
     mkOps x = case statType x of
