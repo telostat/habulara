@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 71b0e272c45f1eb72a5de5646ad633394af86aa0f7c2d84fa992b8760670d42f
+-- hash: 8a8cd693398959bf170a534af75f78f633ee51c6a865bd31ef0a15f31e8bdd94
 
 name:           habulara
-version:        0.0.0.3
+version:        0.0.0.4
 synopsis:       Toolkit for Processing Tabular Data
 description:    Please see the README on GitHub at <https://github.com/telostat/habulara#readme>
 category:       Text, CSV
@@ -21,7 +21,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
+    CHANGELOG.md
 
 source-repository head
   type: git
@@ -37,6 +37,7 @@ library
       Data.Habulara
       Data.Habulara.Core
       Data.Habulara.Core.Conduit
+      Data.Habulara.Core.Internal.Aeson
       Data.Habulara.Core.Internal.Cassava
       Data.Habulara.Core.Mapping
       Data.Habulara.Core.Operation
@@ -48,11 +49,13 @@ library
       Data.Habulara.Dsl
       Data.Habulara.Dsl.Operators
       Data.Habulara.Dsl.Specification
+      Data.Habulara.Inspect.Internal
   other-modules:
       Paths_habulara
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall
   build-depends:
       aeson
@@ -66,6 +69,7 @@ library
     , scientific
     , text
     , time
+    , typed-process
     , unordered-containers
     , vector
     , yaml
@@ -92,6 +96,7 @@ executable habulara
     , scientific
     , text
     , time
+    , typed-process
     , unordered-containers
     , vector
     , yaml
@@ -105,7 +110,7 @@ test-suite habulara-doctest
   other-modules:
       Paths_habulara
   hs-source-dirs:
-      ./.
+      ./
   ghc-options: -threaded
   build-depends:
       aeson
@@ -121,6 +126,7 @@ test-suite habulara-doctest
     , scientific
     , text
     , time
+    , typed-process
     , unordered-containers
     , vector
     , yaml
@@ -151,6 +157,7 @@ test-suite habulara-test
     , scientific
     , text
     , time
+    , typed-process
     , unordered-containers
     , vector
     , yaml

@@ -14,7 +14,7 @@ FILE="${DIR_RSLT}/result_$(date +"%Y-%m-%sT%H:%M:%S".csv)"
 
 ## Function to run a command and measure its resident memory and runtime.
 run() {
-  /usr/bin/time --format "%M,%e" "${1}" --spec spec.yaml --input "${2}" --output /dev/null
+  /usr/bin/time --format "%M,%e" "${1}" process --spec spec.yaml --input "${2}" --output /dev/null
 }
 
 ## List example input sets:

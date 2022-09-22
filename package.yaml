@@ -1,5 +1,5 @@
 name:                habulara
-version:             0.0.0.3
+version:             0.0.0.4
 github:              "telostat/habulara"
 license:             BSD3
 author:              "Vehbi Sinan Tunalioglu"
@@ -8,7 +8,7 @@ copyright:           "Copyright (c) 2020 Telostat Pte Ltd"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
+- CHANGELOG.md
 
 synopsis:            Toolkit for Processing Tabular Data
 category:            Text, CSV
@@ -32,6 +32,7 @@ dependencies:
 - scientific
 - text
 - time
+- typed-process
 - unordered-containers
 - vector
 - yaml

@@ -1,3 +1,6 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | This module provides primitives and pre-defined convenience functions used
 -- to build Habulara 'Record's from raw 'Record's.
 --
@@ -8,29 +11,24 @@
 -- Right (VEmpty,fromList [])
 -- >>> runHabularaIO (1, HM.fromList [("a", "1")] :: Record) (HM.fromList [("b", "1")]) (peek "b" >>= asEmpty)
 -- Right (VEmpty,fromList [("b",VText (MkNonEmpty {unpack = "1"}))])
-
-{-# LANGUAGE ConstraintKinds  #-}
-{-# LANGUAGE FlexibleContexts #-}
-
 module Data.Habulara.Core.Operation where
 
-import           Control.Applicative               (Alternative((<|>)))
-import           Control.Monad.Except              (MonadError(..))
-import           Control.Monad.Reader              (MonadReader)
-import           Control.Monad.State               (MonadState)
-import           Data.Habulara.Core.Mapping        (MapperEnvir, MapperState, askLabel, getLabel)
-import           Data.Habulara.Core.Types.Class    (HabularaError(..), HabularaT, liftMaybe, runHabularaIO)
+import Control.Applicative (Alternative ((<|>)))
+import Control.Monad.Except (MonadError (..))
+import Control.Monad.Reader (MonadReader)
+import Control.Monad.State (MonadState)
+import Data.Habulara.Core.Mapping (MapperEnvir, MapperState, askLabel, getLabel)
+import Data.Habulara.Core.Types.Class (HabularaError (..), HabularaT, liftMaybe, runHabularaIO)
 import qualified Data.Habulara.Core.Types.NonEmpty as NEV
-import           Data.Habulara.Core.Types.Value    (Valuable(..), Value(..))
-import qualified Data.Map.Strict                   as M
-import           Data.Maybe                        (fromMaybe)
-import           Data.Scientific                   (Scientific, toRealFloat)
-import qualified Data.Set                          as S
-import qualified Data.Text                         as T
-import           Data.Time                         (Day, LocalTime, parseTimeM)
+import Data.Habulara.Core.Types.Value (Valuable (..), Value (..))
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
+import Data.Scientific (Scientific, toRealFloat)
+import qualified Data.Set as S
+import qualified Data.Text as T
+import Data.Time (Day, LocalTime, defaultTimeLocale, parseTimeM)
 import qualified Data.Time
-import           Data.Time.Format                  (defaultTimeLocale)
-import           Prelude                           hiding (and, drop, lookup, not, or, subtract, take)
+import Prelude hiding (and, drop, lookup, not, or, subtract, take)
 import qualified Prelude
 
 
@@ -45,12 +43,13 @@ import qualified Prelude
 
 
 -- * Field Accessors
+
+
 --
 -- These operations are essential in that they allow accessing raw record or
 -- buffer record field values.
 --
--- $operationsFieldAccessors
-
+-- \$operationsFieldAccessors
 
 -- | Attempts to retrieve the field 'Value' for the given field label from the
 -- raw record.
@@ -98,11 +97,12 @@ peek = withText (\s -> getLabel s >>= liftMaybe (HabularaErrorOperation $ "Can n
 
 
 -- * Value Constructors
+
+
 --
 -- These operations are primitives for 'Value' construction.
 --
--- $operationsValueConstructors
-
+-- \$operationsValueConstructors
 
 -- >>> empty
 -- VEmpty
@@ -157,11 +157,12 @@ text = toValue
 
 
 -- * Value Converters
+
+
 --
 -- These operations are primitives for 'Value' conversions.
 --
--- $operationsValueConverters
-
+-- \$operationsValueConverters
 
 -- | Converts the value to a 'VEmpty' value.
 --
@@ -274,7 +275,10 @@ asText x = text <$> fromValue x
 
 
 -- * Value Subtype Guarded Operators
+
+
 --
+
 -- $ operatorsValueSubtypeGuards
 
 
@@ -286,7 +290,7 @@ asText x = text <$> fromValue x
 -- Left (HabularaErrorOperation "Expecting 'VEmpty', recieved: VBool True")
 withEmpty :: MonadError HabularaError m => m a -> Value -> m a
 withEmpty a VEmpty = a
-withEmpty _ v      = raiseOperationTypeGuard "VEmpty" v
+withEmpty _ v = raiseOperationTypeGuard "VEmpty" v
 
 
 -- | Runs the action if the value is a 'VBool', raises error otherwise.
@@ -299,7 +303,7 @@ withEmpty _ v      = raiseOperationTypeGuard "VEmpty" v
 -- Left (HabularaErrorOperation "Expecting 'VBool', recieved: VEmpty")
 withBool :: MonadError HabularaError m => (Bool -> m a) -> Value -> m a
 withBool f (VBool x) = f x
-withBool _ v         = raiseOperationTypeGuard "VBool" v
+withBool _ v = raiseOperationTypeGuard "VBool" v
 
 
 -- | Runs the action if the value is a 'VDate', raises error otherwise.
@@ -310,7 +314,7 @@ withBool _ v         = raiseOperationTypeGuard "VBool" v
 -- Left (HabularaErrorOperation "Expecting 'VDate', recieved: VBool True")
 withDate :: MonadError HabularaError m => (Day -> m a) -> Value -> m a
 withDate f (VDate x) = f x
-withDate _ v         = raiseOperationTypeGuard "VDate" v
+withDate _ v = raiseOperationTypeGuard "VDate" v
 
 
 -- | Runs the action if the value is a 'VTime', raises error otherwise.
@@ -321,7 +325,7 @@ withDate _ v         = raiseOperationTypeGuard "VDate" v
 -- Left (HabularaErrorOperation "Expecting 'VTime', recieved: VBool True")
 withTime :: MonadError HabularaError m => (LocalTime -> m a) -> Value -> m a
 withTime f (VTime x) = f x
-withTime _ v         = raiseOperationTypeGuard "VTime" v
+withTime _ v = raiseOperationTypeGuard "VTime" v
 
 
 -- | Runs the action if the value is a 'VNumber', raises error otherwise.
@@ -332,7 +336,7 @@ withTime _ v         = raiseOperationTypeGuard "VTime" v
 -- Left (HabularaErrorOperation "Expecting 'VNumber', recieved: VBool True")
 withNumber :: MonadError HabularaError m => (Scientific -> m a) -> Value -> m a
 withNumber f (VNumber x) = f x
-withNumber _ v           = raiseOperationTypeGuard "VNumber" v
+withNumber _ v = raiseOperationTypeGuard "VNumber" v
 
 
 -- | Runs the action if the value is a 'VText', raises error otherwise.
@@ -343,13 +347,14 @@ withNumber _ v           = raiseOperationTypeGuard "VNumber" v
 -- Left (HabularaErrorOperation "Expecting 'VText', recieved: VBool True")
 withText :: MonadError HabularaError m => (T.Text -> m a) -> Value -> m a
 withText f (VText x) = f . NEV.unpack $ x
-withText _ v         = raiseOperationTypeGuard "VText" v
+withText _ v = raiseOperationTypeGuard "VText" v
 
 
 -- * Boolean Operators
---
--- $operatorsBoolean
 
+
+--
+-- \$operatorsBoolean
 
 -- | Boolean @not@ operation.
 --
@@ -404,9 +409,10 @@ xor = binaryOperation withBool (\x y -> liftBool $ (/=) x y)
 
 
 -- * Date Operators
---
--- $operatorsDate
 
+
+--
+-- \$operatorsDate
 
 -- | Parses a date.
 --
@@ -415,12 +421,15 @@ xor = binaryOperation withBool (\x y -> liftBool $ (/=) x y)
 -- >>> testopV $ parseDate "%Y%m%d" "2020-12-31"
 -- Left (HabularaErrorOperation "Can not parse date. Format: %Y%m%d. Value: 2020-12-31")
 parseDate :: MonadError HabularaError m => Value -> Value -> m Value
-parseDate = binaryOperation
-  withText
-  (\f v -> maybe
-    (raiseOperationError $ "Can not parse date. Format: " <> f <> ". Value: " <> v)
-    (pure . VDate)
-    (parseTimeM True defaultTimeLocale (T.unpack f) (T.unpack v)))
+parseDate =
+  binaryOperation
+    withText
+    ( \f v ->
+        maybe
+          (raiseOperationError $ "Can not parse date. Format: " <> f <> ". Value: " <> v)
+          (pure . VDate)
+          (parseTimeM True defaultTimeLocale (T.unpack f) (T.unpack v))
+    )
 
 
 -- | Adds days to a date.
@@ -436,9 +445,10 @@ addDays x y = withNumber (\n -> withDate (liftDate . Data.Time.addDays (floor n)
 
 
 -- * Time Operators
---
--- $operatorsTime
 
+
+--
+-- \$operatorsTime
 
 -- | Parses a time.
 --
@@ -447,12 +457,15 @@ addDays x y = withNumber (\n -> withDate (liftDate . Data.Time.addDays (floor n)
 -- >>> testopV $ parseTime "%Y%m%d%H%M%S" "2020-12-31 23:59:59"
 -- Left (HabularaErrorOperation "Can not parse time. Format: %Y%m%d%H%M%S. Value: 2020-12-31 23:59:59")
 parseTime :: MonadError HabularaError m => Value -> Value -> m Value
-parseTime = binaryOperation
-  withText
-  (\f v -> maybe
-    (raiseOperationError $ "Can not parse time. Format: " <> f <> ". Value: " <> v)
-    (pure . VTime)
-    (parseTimeM True defaultTimeLocale (T.unpack f) (T.unpack v)))
+parseTime =
+  binaryOperation
+    withText
+    ( \f v ->
+        maybe
+          (raiseOperationError $ "Can not parse time. Format: " <> f <> ". Value: " <> v)
+          (pure . VTime)
+          (parseTimeM True defaultTimeLocale (T.unpack f) (T.unpack v))
+    )
 
 
 -- | Adds seconds to a date/time.
@@ -470,9 +483,10 @@ addSeconds x y = withNumber (\n -> withTime (liftTime . Data.Time.addLocalTime (
 
 
 -- * Numeric Operators
---
--- $operatorsNumeric
 
+
+--
+-- \$operatorsNumeric
 
 -- | Addition operation.
 --
@@ -509,7 +523,7 @@ multiply = binaryOperation withNumber (\x y -> liftNumber $ (*) x y)
 divide :: MonadError HabularaError m => Value -> Value -> m Value
 divide = binaryOperation withNumber (\x y -> liftNumber $ floatingDiv x y)
   where
-    floatingDiv :: Scientific -> Scientific -> Scientific  -- TODO: Find a better solution
+    floatingDiv :: Scientific -> Scientific -> Scientific -- TODO: Find a better solution
     floatingDiv x y = read . show $ (toRealFloat x :: Double) / (toRealFloat y :: Double)
 
 
@@ -528,9 +542,10 @@ percentage = unaryOperation withNumber (liftNumber . (*) 100)
 
 
 -- * Textual Operators
---
--- $operatorsTextual
 
+
+--
+-- \$operatorsTextual
 
 -- | Strips whitespace from the beginning and end of a textual value.
 --
@@ -750,9 +765,10 @@ splitIx n x y = withNumber (\i -> withText (\s -> withText (liftText . attempt i
 
 
 -- * Conditionals
---
--- $operatorsConditionals
 
+
+--
+-- \$operatorsConditionals
 
 -- | Checks a condition for a given 'Value' and returns it if the condition
 -- holds true, raises given error otherwise.
@@ -788,13 +804,14 @@ member s v = liftBool $ S.member v s
 oneof :: MonadError HabularaError m => S.Set Value -> Value -> m Value
 oneof s v = guard errmsg (member s) v
   where
-    errmsg = "Expected one of " <> T.intercalate "," (map display $ S.toList s) <> " but received " <> display v
+    errmsg = "Expected one of " <> T.intercalate "," (display <$> S.toList s) <> " but received " <> display v
 
 
 -- * Value mappers
---
--- $operatorsValueMappers
 
+
+--
+-- \$operatorsValueMappers
 
 -- | Attempts to translate the given 'Value' from a 'Value' dictionary.
 --
@@ -811,17 +828,18 @@ translate d v = case M.lookup v d of
 
 
 -- * Helpers
---
--- $helpers
 
+
+--
+-- \$helpers
 
 -- | Provides a unary operation template.
-unaryOperation :: MonadError HabularaError m => ((a -> m b) -> Value -> m b) ->  (a -> m b) -> Value -> m b
+unaryOperation :: MonadError HabularaError m => ((a -> m b) -> Value -> m b) -> (a -> m b) -> Value -> m b
 unaryOperation g = g
 
 
 -- | Provides a binary operation template.
-binaryOperation :: MonadError HabularaError m => ((a -> m b) -> Value -> m b) ->  (a -> a -> m b) -> Value -> Value -> m b
+binaryOperation :: MonadError HabularaError m => ((a -> m b) -> Value -> m b) -> (a -> a -> m b) -> Value -> Value -> m b
 binaryOperation g f x y = g (\a -> g (f a) y) x
 
 
@@ -856,9 +874,10 @@ liftText = liftWith text
 
 
 -- * Utils
---
--- $utils
 
+
+--
+-- \$utils
 
 -- | Attempts to find the element in a given list that is at the given index.
 --
@@ -875,9 +894,9 @@ liftText = liftWith text
 -- >>> at 2 "0123456789"
 -- Just '2'
 at :: Integer -> [a] -> Maybe a
-at _ []     = Nothing
-at 0 (x:_)  = Just x
-at n (_:xs) = at (n - 1) xs
+at _ [] = Nothing
+at 0 (x : _) = Just x
+at n (_ : xs) = at (n - 1) xs
 
 
 -- | Convenience function for throwing operation errors.

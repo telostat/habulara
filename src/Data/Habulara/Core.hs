@@ -8,9 +8,9 @@
 --
 --
 -- Essential types are given below.
-
-module Data.Habulara.Core
-  ( module Types
-  ) where
+module Data.Habulara.Core (
+  module Types,
+) where
 
 import Data.Habulara.Core.Types as Types
+

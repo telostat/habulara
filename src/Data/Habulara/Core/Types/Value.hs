@@ -1,40 +1,40 @@
-{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Data.Habulara.Core.Types.Value where
 
-import           Control.Monad                     ((>=>))
-import           Control.Monad.Except              (MonadError(throwError))
-import qualified Data.ByteString                   as B
-import qualified Data.ByteString.Char8             as BC
-import qualified Data.Csv                          as Cassava
-import           Data.Habulara.Core.Types.Class    (HabularaError(..), liftMaybe)
+import Control.Monad ((>=>))
+import Control.Monad.Except (MonadError (throwError))
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
+import qualified Data.Csv as Cassava
+import Data.Habulara.Core.Types.Class (HabularaError (..), liftMaybe)
 import qualified Data.Habulara.Core.Types.NonEmpty as NEV
-import           Data.Scientific                   (Scientific)
-import           Data.String                       (IsString(..))
-import qualified Data.Text                         as T
-import qualified Data.Text.Encoding                as TE
-import           Data.Time
-                 ( Day(..)
-                 , LocalTime(..)
-                 , NominalDiffTime
-                 , TimeOfDay(..)
-                 , addLocalTime
-                 , diffLocalTime
-                 , fromGregorian
-                 , secondsToNominalDiffTime
-                 )
-import           Text.Read                         (readMaybe)
+import Data.Scientific (Scientific)
+import Data.String (IsString (..))
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import Data.Time (
+  Day (..),
+  LocalTime (..),
+  NominalDiffTime,
+  TimeOfDay (..),
+  addLocalTime,
+  diffLocalTime,
+  fromGregorian,
+  secondsToNominalDiffTime,
+ )
+import Text.Read (readMaybe)
 
 
 -- | Habulara row record field value type.
-data Value =
-    VEmpty
-  | VBool   !Bool
-  | VDate   !Day
-  | VTime   !LocalTime
+data Value
+  = VEmpty
+  | VBool !Bool
+  | VDate !Day
+  | VTime !LocalTime
   | VNumber !Scientific
-  | VText   !(NEV.NonEmpty T.Text)
+  | VText !(NEV.NonEmpty T.Text)
   deriving (Eq, Ord, Show)
 
 
@@ -93,46 +93,57 @@ instance Cassava.ToField Value where
 
 
 -- * Valuable Definition
---
--- $valuable
 
+
+--
+-- \$valuable
 
 -- | A convenience class for the interplay between native and 'Value' types.
 class (Eq a, Show a) => Valuable a where
   -- | Identity value.
   identity :: a
 
+
   -- | Checks if the value is identity.
   isIdentity :: a -> Bool
   isIdentity = (==) identity
 
+
   -- | Converts to the 'Value' value.
   toValue :: a -> Value
+
 
   -- | Attempts to convert from 'Value' value.
   fromValue :: MonadError HabularaError m => Value -> m a
 
+
   -- | Converts to a 'B.ByteString ('@cassava@ 'Csv.Field') value.
   toByteString :: a -> B.ByteString
 
+
   -- | Parses from a 'B.ByteString ('@cassava@ 'Csv.Field') value.
   fromByteString :: MonadError HabularaError m => B.ByteString -> m a
+
 
   -- | Converts to a 'T.Text' value.
   toText :: a -> T.Text
   toText = TE.decodeUtf8 . toByteString
 
+
   -- | Parses from a 'T.Text' value.
   fromText :: MonadError HabularaError m => T.Text -> m a
   fromText = fromByteString . TE.encodeUtf8
+
 
   -- | Provides a convenience function to throw a conversion error.
   raiseConversionError :: MonadError HabularaError m => String -> Value -> m a
   raiseConversionError t v = throwError . HabularaErrorValueConversion $ "Can not convert to " <> t <> ": " <> show v
 
+
   -- | Provides a convenience function to throw a read error.
   raiseReadError :: MonadError HabularaError m => String -> B.ByteString -> m a
   raiseReadError t x = throwError . HabularaErrorRead $ "Can not read " <> t <> " from: " <> BC.unpack x
+
 
   -- | Displays the value as a text, usually to be displayed to end users.
   display :: a -> T.Text
@@ -152,25 +163,30 @@ class (Eq a, Show a) => Valuable a where
 instance Valuable Value where
   identity = VEmpty
 
+
   toValue = id
+
 
   fromValue = pure
 
-  toByteString VEmpty      = B.empty
-  toByteString (VText t)   = toByteString $ NEV.unpack t
+
+  toByteString VEmpty = B.empty
+  toByteString (VText t) = toByteString $ NEV.unpack t
   toByteString (VNumber d) = toByteString d
-  toByteString (VBool b)   = toByteString b
-  toByteString (VDate d)   = toByteString d
-  toByteString (VTime t)   = toByteString t
+  toByteString (VBool b) = toByteString b
+  toByteString (VDate d) = toByteString d
+  toByteString (VTime t) = toByteString t
+
 
   fromByteString = pure . maybe VEmpty VText . NEV.nonEmpty . TE.decodeUtf8
 
-  display VEmpty      = "<EMPTY>"
-  display (VText t)   = display t
+
+  display VEmpty = "<EMPTY>"
+  display (VText t) = display t
   display (VNumber d) = display d
-  display (VBool b)   = display b
-  display (VDate d)   = display d
-  display (VTime t)   = display t
+  display (VBool b) = display b
+  display (VDate d) = display d
+  display (VTime t) = display t
 
 
 -- | 'Valuable' instance for @'NonEmpty' 'T.Text'@ type.
@@ -190,15 +206,20 @@ instance Valuable Value where
 instance Valuable (NEV.NonEmpty T.Text) where
   identity = error "NonEmpty Text does not have identity value"
 
+
   toValue = VText
 
-  fromValue VEmpty    = throwError $ HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value"
+
+  fromValue VEmpty = throwError $ HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value"
   fromValue (VText t) = pure t
-  fromValue v         = fromByteString . toByteString $ v
+  fromValue v = fromByteString . toByteString $ v
+
 
   toByteString = toByteString . NEV.unpack
 
+
   fromByteString = fromByteString >=> liftMaybe (HabularaErrorValueConversion "Can not create 'NonEmpty Text' with empty value") . NEV.nonEmpty
+
 
   display = NEV.unpack
 
@@ -226,13 +247,17 @@ instance Valuable (NEV.NonEmpty T.Text) where
 instance Valuable T.Text where
   identity = ""
 
+
   toValue = maybe VEmpty VText . NEV.nonEmpty
 
-  fromValue VEmpty    = pure ""
+
+  fromValue VEmpty = pure ""
   fromValue (VText t) = pure . NEV.unpack $ t
-  fromValue v         = fromByteString . toByteString $ v
+  fromValue v = fromByteString . toByteString $ v
+
 
   toByteString = TE.encodeUtf8
+
 
   -- TODO: Use decodeUtf8' to catch UnicodeException and propagate.
   fromByteString = pure . TE.decodeUtf8
@@ -267,21 +292,25 @@ instance Valuable T.Text where
 instance Valuable Scientific where
   identity = 0
 
+
   toValue = VNumber
 
-  fromValue VEmpty        = pure identity
-  fromValue (VNumber x)   = pure x
-  fromValue (VBool False) = pure 0
-  fromValue (VBool True)  = pure 1
-  fromValue (VDate x)     = pure . fromIntegral . toModifiedJulianDay $ x
-  fromValue (VTime x)     = pure . realToFrac $ epoch x
-  fromValue v             = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
+  fromValue VEmpty = pure identity
+  fromValue (VNumber x) = pure x
+  fromValue (VBool False) = pure 0
+  fromValue (VBool True) = pure 1
+  fromValue (VDate x) = pure . fromIntegral . toModifiedJulianDay $ x
+  fromValue (VTime x) = pure . realToFrac $ epoch x
+  fromValue v = fromByteString . toByteString $ v
+
+
+  toByteString = BC.pack . show -- TODO: Any faster way of doing this?
+
 
   fromByteString b = case readMaybe $ BC.unpack b of -- TODO: Any faster way of doing this?
     Nothing -> raiseReadError "Scientific" b
-    Just x  -> pure x
+    Just x -> pure x
 
 
 -- | 'Valuable' instance for 'Bool' type.
@@ -325,21 +354,25 @@ instance Valuable Scientific where
 instance Valuable Bool where
   identity = False
 
+
   toValue = VBool
 
-  fromValue VEmpty      = pure identity
+
+  fromValue VEmpty = pure identity
   fromValue (VNumber x) = pure $ x /= 0
-  fromValue (VBool x)   = pure x
+  fromValue (VBool x) = pure x
   fromValue x@(VDate _) = raiseConversionError "Boolean" x
   fromValue x@(VTime _) = raiseConversionError "Boolean" x
-  fromValue v           = fromByteString . toByteString $ v
+  fromValue v = fromByteString . toByteString $ v
 
-  toByteString True  = "True"
+
+  toByteString True = "True"
   toByteString False = "False"
 
-  fromByteString "True"  = pure True
+
+  fromByteString "True" = pure True
   fromByteString "False" = pure False
-  fromByteString b       = raiseReadError "Boolean" b
+  fromByteString b = raiseReadError "Boolean" b
 
 
 -- | 'Valuable' instance for 'Day' type.
@@ -373,20 +406,24 @@ instance Valuable Bool where
 instance Valuable Day where
   identity = ModifiedJulianDay 0
 
+
   toValue = VDate
 
-  fromValue VEmpty      = pure identity
+
+  fromValue VEmpty = pure identity
   fromValue (VNumber x) = pure . ModifiedJulianDay . floor $ x
   fromValue x@(VBool _) = raiseConversionError "Date" x
-  fromValue (VDate x)   = pure x
-  fromValue (VTime x)   = pure . localDay $ x
-  fromValue v           = fromByteString . toByteString $ v
+  fromValue (VDate x) = pure x
+  fromValue (VTime x) = pure . localDay $ x
+  fromValue v = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
-  fromByteString b = case readMaybe $ BC.unpack b of  -- TODO: Any faster way of doing this?
+  toByteString = BC.pack . show -- TODO: Any faster way of doing this?
+
+
+  fromByteString b = case readMaybe $ BC.unpack b of -- TODO: Any faster way of doing this?
     Nothing -> raiseReadError "Date" b
-    Just x  -> pure x
+    Just x -> pure x
 
 
 -- | 'Valuable' instance for 'LocalTime' type.
@@ -436,26 +473,31 @@ instance Valuable Day where
 instance Valuable LocalTime where
   identity = epochStart
 
+
   toValue = VTime
 
-  fromValue VEmpty      = pure identity
+
+  fromValue VEmpty = pure identity
   fromValue (VNumber x) = pure . flip addLocalTime epochStart . secondsToNominalDiffTime . fromRational . toRational $ x
   fromValue x@(VBool _) = raiseConversionError "LocalTime" x
-  fromValue (VDate x)   = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
-  fromValue (VTime x)   = pure x
-  fromValue v           = fromByteString . toByteString $ v
+  fromValue (VDate x) = pure . flip LocalTime (TimeOfDay 0 0 0) $ x
+  fromValue (VTime x) = pure x
+  fromValue v = fromByteString . toByteString $ v
 
-  toByteString = BC.pack . show  -- TODO: Any faster way of doing this?
 
-  fromByteString b = case readMaybe $ BC.unpack b of  -- TODO: Any faster way of doing this?
+  toByteString = BC.pack . show -- TODO: Any faster way of doing this?
+
+
+  fromByteString b = case readMaybe $ BC.unpack b of -- TODO: Any faster way of doing this?
     Nothing -> raiseReadError "LocalTime" b
-    Just x  -> pure x
+    Just x -> pure x
 
 
 -- * Auxiliaries
---
--- $auxiliaries
 
+
+--
+-- \$auxiliaries
 
 -- | Local time corresponding to UNIX epoch start time.
 --
