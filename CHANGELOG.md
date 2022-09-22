@@ -7,6 +7,15 @@ Policy](https://pvp.haskell.org/).
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Features
+- **inspect:** add inspect command that produces a YAML specification
+
+### Code Refactoring
+- drop TemplateHaskell usage for Aeson.FromJSON instances
+- adopt custom hlint rules, attend hlint warnings
+- adapt to Aeson v2
+- **style:** adopt fourmolu (v0.8.2)
+
 
 <a name="0.0.0.3"></a>
 ## [0.0.0.3] - 2021-02-09

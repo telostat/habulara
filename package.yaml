@@ -8,7 +8,7 @@ copyright:           "Copyright (c) 2020 Telostat Pte Ltd"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
+- CHANGELOG.md
 
 synopsis:            Toolkit for Processing Tabular Data
 category:            Text, CSV
