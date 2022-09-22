@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.7.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3e70e84ed2a27c487a95219a3d89b97a6f23fa2aebc38f082b0438bfc99c53be
+-- hash: 591feb8d30c833f96d4f3892d1140ea1b9cfcf637cb5d0c53e36107bce975e67
 
 name:           habulara
 version:        0.0.0.4
@@ -37,6 +37,7 @@ library
       Data.Habulara
       Data.Habulara.Core
       Data.Habulara.Core.Conduit
+      Data.Habulara.Core.Internal.Aeson
       Data.Habulara.Core.Internal.Cassava
       Data.Habulara.Core.Mapping
       Data.Habulara.Core.Operation

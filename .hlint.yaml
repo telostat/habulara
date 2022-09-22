@@ -27,13 +27,13 @@
   - default: false # All extension are banned by default
   - name: # Only these listed extensions should be used (to be refined further in the future):
     - ConstraintKinds
+    - DeriveGeneric
     - FlexibleContexts
     - FlexibleInstances
     - FunctionalDependencies
     - GeneralizedNewtypeDeriving
     - LambdaCase
     - RankNTypes
-    - TemplateHaskell
     - TupleSections
 
 ################

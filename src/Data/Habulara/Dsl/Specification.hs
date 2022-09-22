@@ -1,19 +1,20 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Data.Habulara.Dsl.Specification where
 
 import Control.Arrow ((&&&))
 import Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.TH as Aeson.TH
 import qualified Data.ByteString.Lazy as BL
 import Data.Habulara (HabularaError (..), Label)
 import Data.Habulara.Core.Conduit (runMapperIntoHandle)
-import Data.Habulara.Dsl.Operators (Op, compileOperator, lowerFirst)
+import Data.Habulara.Core.Internal.Aeson (commonAesonOptions)
+import Data.Habulara.Dsl.Operators (Op, compileOperator)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Yaml as Yaml
+import GHC.Generics (Generic)
 import System.IO (Handle)
 
 
@@ -23,10 +24,11 @@ data FieldSpec = FieldSpec
   , fieldSpecDescription :: !(Maybe T.Text)
   , fieldSpecOperation :: !(Maybe (NE.NonEmpty Op))
   }
-  deriving (Show)
+  deriving (Generic, Show)
 
 
-$(Aeson.TH.deriveFromJSON Aeson.defaultOptions {Aeson.fieldLabelModifier = lowerFirst . drop 9} ''FieldSpec)
+instance Aeson.FromJSON FieldSpec where
+  parseJSON = Aeson.genericParseJSON $ commonAesonOptions "fieldSpec"
 
 
 data MappingSpec = MappingSpec
@@ -36,10 +38,11 @@ data MappingSpec = MappingSpec
   , mappingSpecEncoding :: !(Maybe String)
   , mappingSpecFields :: !(NE.NonEmpty FieldSpec)
   }
-  deriving (Show)
+  deriving (Generic, Show)
 
 
-$(Aeson.TH.deriveFromJSON Aeson.defaultOptions {Aeson.fieldLabelModifier = lowerFirst . drop 11} ''MappingSpec)
+instance Aeson.FromJSON MappingSpec where
+  parseJSON = Aeson.genericParseJSON $ commonAesonOptions "mappingSpec"
 
 
 readSpec :: BL.ByteString -> Either String MappingSpec
