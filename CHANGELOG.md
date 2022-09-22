@@ -7,6 +7,9 @@ Policy](https://pvp.haskell.org/).
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="0.0.0.4"></a>
+## [0.0.0.4] - 2022-09-22
 ### Features
 - **inspect:** add inspect command that produces a YAML specification
 
@@ -79,6 +82,7 @@ Policy](https://pvp.haskell.org/).
 - add initial DSL implementation for mapping
 
 
-[Unreleased]: https://github.com/telostat/habulara/compare/0.0.0.3...HEAD
+[Unreleased]: https://github.com/telostat/habulara/compare/0.0.0.4...HEAD
+[0.0.0.4]: https://github.com/telostat/habulara/compare/0.0.0.3...0.0.0.4
 [0.0.0.3]: https://github.com/telostat/habulara/compare/0.0.0.2...0.0.0.3
 [0.0.0.2]: https://github.com/telostat/habulara/compare/0.0.0.1...0.0.0.2
